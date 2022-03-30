@@ -1,9 +1,12 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.6.10'
+    id 'pl.allegro.tech.build.axion-release' version '1.13.6'
 }
 
 group 'org.example'
 version '1.0-SNAPSHOT'
+
+project.version = scmVersion.version
 
 repositories {
     mavenCentral()
@@ -14,6 +17,34 @@ dependencies {
 
     testImplementation 'org.postgresql:postgresql:42.2.16'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+}
+
+def getVersion(version) {
+    def currentRevision = "git rev-parse HEAD".execute().text
+    def branch = "git branch -r --contains $currentRevision".execute().text
+    def dVersion = (branch.contains("origin/master")) ? version : currentRevision.trim()
+    return dVersion
+}
+
+scmVersion {
+    tag {
+        prefix = project.name + "-"
+    }
+    versionIncrementer 'incrementMinor'
+    versionCreator { version, position -> getVersion(version) }
+    hooks {
+        post { context ->
+            project.version = getVersion(context.currentVersion)
+        }
+    }
+    repository {
+        pushTagsOnly = true
+    }
+    checks {
+        uncommittedChanges = false
+        aheadOfRemote = false
+        snapshotDependencies = true
+    }
 }
 
 test {
