@@ -2,6 +2,7 @@ package lsd.v2.jdbc
 
 import lsd.v2.RollbackException
 import lsd.v2.api.*
+import lsd.v2.util.ParameterList
 import java.io.InputStream
 import java.io.Reader
 import java.lang.Exception
@@ -15,10 +16,12 @@ import kotlin.collections.ArrayList
 class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val backingStatement: PreparedStatement) : PreparedFutureStatement,
     PreparedStatement {
     private var future: Future<*>? = null
-    private val parameters = ArrayList<Future<*>>()
     private var executed: Boolean = false
     private var hasResults = false
     private var then: Future<Unit>? = null
+    private var isBatched = false
+    private var currentParameters: ParameterList = ParameterList()
+    private val parameters = ArrayList<ParameterList>()
 
     override fun toString(): String {
         return backingStatement.toString()
@@ -26,8 +29,13 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
 
     override fun resolve(): Boolean {
         if (!executed && future != null) {
-            for (f in parameters) {
-                f.resolve()
+            if (isBatched) {
+                for (f in parameters) {
+                    f.resolve()
+                    backingStatement.addBatch()
+                }
+            } else {
+                currentParameters.resolve()
             }
 
             future!!.resolve()
@@ -54,18 +62,68 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         }
         then?.dispose()
         future = null
-        parameters.clear()
         executed = false
         hasResults = false
         then = null
+
+        for (p in parameters) {
+            p.clear()
+        }
+
+        if (isBatched) {
+            backingStatement.clearParameters()
+            backingStatement.clearBatch()
+        }
     }
 
     override fun addFutureBatch() {
-        TODO("Not yet implemented")
+        isBatched = true
+        parameters.add(currentParameters)
+        currentParameters = ParameterList()
+    }
+
+    override fun executeFutureQuery(): FutureResultSet {
+        if (future != null) {
+            return LSDResultSet(this)
+        }
+
+        future = FutureRunner { backingStatement.executeQuery() }
+        lsdConnection.addFutureStatement(this)
+
+        return LSDResultSet(this)
+    }
+
+    override fun executeFutureUpdate() {
+        if (future != null) {
+            return
+        }
+
+        future = FutureRunner { backingStatement.executeUpdate() }
+        lsdConnection.addFutureStatement(this)
     }
 
     override fun executeFutureBatch() {
-        TODO("Not yet implemented")
+        if (future != null) {
+            return
+        }
+        future = FutureRunner { backingStatement.executeBatch() }
+        lsdConnection.addFutureStatement(this)
+    }
+
+    override fun addBatch() {
+        backingStatement.addBatch()
+    }
+
+    override fun addBatch(sql: String?) {
+        backingStatement.addBatch(sql)
+    }
+
+    override fun clearBatch() {
+        backingStatement.clearBatch()
+    }
+
+    override fun executeBatch(): IntArray {
+        return backingStatement.executeBatch()
     }
 
     private fun hasOpenResultSet(): Boolean {
@@ -76,19 +134,6 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         return backingStatement.executeQuery()
     }
 
-    override fun executeFutureQuery(): FutureResultSet {
-
-        future = FutureRunner { backingStatement.executeQuery() }
-        lsdConnection.addFutureStatement(this)
-
-        return LSDResultSet(this)
-    }
-
-    override fun executeFutureUpdate() {
-        future = FutureRunner { backingStatement.executeUpdate() }
-        lsdConnection.addFutureStatement(this)
-    }
-
     override fun then(future: () -> Unit) {
         then = FutureRunner { future.invoke() }
     }
@@ -97,24 +142,32 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         throw exception
     }
 
-    private fun addFuture(f: () -> Unit) {
-        parameters.add(FutureRunner(f))
+    private fun addParameter(f: () -> Unit) {
+        addParameter(f, false)
+    }
+
+    private fun addParameter(f: () -> Unit, realFuture: Boolean) {
+        if (isBatched || realFuture) {
+            currentParameters.add(FutureRunner(f))
+        } else {
+            f.invoke()
+        }
     }
 
     override fun setFutureInt(parameterIndex: Int, x: Future<Int>) {
-        addFuture { backingStatement.setInt(parameterIndex, x.resolve()) }
+        addParameter({ backingStatement.setInt(parameterIndex, x.resolve()) }, true)
     }
 
     override fun setFutureDouble(parameterIndex: Int, x: Future<Double>) {
-        addFuture { backingStatement.setDouble(parameterIndex, x.resolve()) }
+        addParameter({ backingStatement.setDouble(parameterIndex, x.resolve()) }, true)
     }
 
     override fun setFutureFloat(parameterIndex: Int, x: Future<Float>) {
-        addFuture { backingStatement.setFloat(parameterIndex, x.resolve()) }
+        addParameter({ backingStatement.setFloat(parameterIndex, x.resolve()) }, true)
     }
 
     override fun setFutureString(parameterIndex: Int, x: Future<String>) {
-        addFuture { backingStatement.setString(parameterIndex, x.resolve()) }
+        addParameter({ backingStatement.setString(parameterIndex, x.resolve()) }, true)
     }
 
     override fun <T : Any?> unwrap(iface: Class<T>?): T {
@@ -257,22 +310,6 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         return backingStatement.resultSetType
     }
 
-    override fun addBatch() {
-        backingStatement.addBatch()
-    }
-
-    override fun addBatch(sql: String?) {
-        backingStatement.addBatch(sql)
-    }
-
-    override fun clearBatch() {
-        backingStatement.clearBatch()
-    }
-
-    override fun executeBatch(): IntArray {
-        return backingStatement.executeBatch()
-    }
-
     override fun getConnection(): Connection {
         return backingStatement.connection
     }
@@ -306,116 +343,117 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
     }
 
     override fun setNull(parameterIndex: Int, sqlType: Int) {
-        backingStatement.setNull(parameterIndex, sqlType)
+        addParameter { backingStatement.setNull(parameterIndex, sqlType) }
+
     }
 
     override fun setNull(parameterIndex: Int, sqlType: Int, typeName: String?) {
-        backingStatement.setNull(parameterIndex, sqlType, typeName)
+        addParameter { backingStatement.setNull(parameterIndex, sqlType, typeName) }
     }
 
     override fun setBoolean(parameterIndex: Int, x: Boolean) {
-        backingStatement.setBoolean(parameterIndex, x)
+        addParameter { backingStatement.setBoolean(parameterIndex, x) }
     }
 
     override fun setByte(parameterIndex: Int, x: Byte) {
-        backingStatement.setByte(parameterIndex, x)
+        addParameter { backingStatement.setByte(parameterIndex, x) }
     }
 
     override fun setShort(parameterIndex: Int, x: Short) {
-        backingStatement.setShort(parameterIndex, x)
+        addParameter { backingStatement.setShort(parameterIndex, x) }
     }
 
     override fun setObject(parameterIndex: Int, x: Any?, targetSqlType: Int) {
-        backingStatement.setObject(parameterIndex, x, targetSqlType)
+        addParameter { backingStatement.setObject(parameterIndex, x, targetSqlType) }
     }
 
     override fun setObject(parameterIndex: Int, x: Any?) {
-        backingStatement.setObject(parameterIndex, x)
+        addParameter { backingStatement.setObject(parameterIndex, x) }
     }
 
     override fun setObject(parameterIndex: Int, x: Any?, targetSqlType: Int, scaleOrLength: Int) {
-        backingStatement.setObject(parameterIndex, x, targetSqlType, scaleOrLength)
+        addParameter { backingStatement.setObject(parameterIndex, x, targetSqlType, scaleOrLength) }
     }
 
     override fun setInt(parameterIndex: Int, x: Int) {
-        backingStatement.setInt(parameterIndex, x)
+        addParameter { backingStatement.setInt(parameterIndex, x) }
     }
 
     override fun setLong(parameterIndex: Int, x: Long) {
-        backingStatement.setLong(parameterIndex, x)
+        addParameter { backingStatement.setLong(parameterIndex, x) }
     }
 
     override fun setFloat(parameterIndex: Int, x: Float) {
-        backingStatement.setFloat(parameterIndex, x)
+        addParameter { backingStatement.setFloat(parameterIndex, x) }
     }
 
     override fun setDouble(parameterIndex: Int, x: Double) {
-        backingStatement.setDouble(parameterIndex, x)
+        addParameter { backingStatement.setDouble(parameterIndex, x) }
     }
 
     override fun setBigDecimal(parameterIndex: Int, x: BigDecimal?) {
-        backingStatement.setBigDecimal(parameterIndex, x)
+        addParameter { backingStatement.setBigDecimal(parameterIndex, x) }
     }
 
     override fun setString(parameterIndex: Int, x: String?) {
-        backingStatement.setString(parameterIndex, x)
+        addParameter { backingStatement.setString(parameterIndex, x) }
     }
 
     override fun setBytes(parameterIndex: Int, x: ByteArray?) {
-        backingStatement.setBytes(parameterIndex, x)
+        addParameter { backingStatement.setBytes(parameterIndex, x) }
     }
 
     override fun setDate(parameterIndex: Int, x: Date?) {
-        backingStatement.setDate(parameterIndex, x)
+        addParameter { backingStatement.setDate(parameterIndex, x) }
     }
 
     override fun setDate(parameterIndex: Int, x: Date?, cal: Calendar?) {
-        backingStatement.setDate(parameterIndex, x, cal)
+        addParameter { backingStatement.setDate(parameterIndex, x, cal) }
     }
 
     override fun setTime(parameterIndex: Int, x: Time?) {
-        backingStatement.setTime(parameterIndex, x)
+        addParameter { backingStatement.setTime(parameterIndex, x) }
     }
 
     override fun setTime(parameterIndex: Int, x: Time?, cal: Calendar?) {
-        backingStatement.setTime(parameterIndex, x, cal)
+        addParameter { backingStatement.setTime(parameterIndex, x, cal) }
     }
 
     override fun setTimestamp(parameterIndex: Int, x: Timestamp?) {
-        backingStatement.setTimestamp(parameterIndex, x)
+        addParameter { backingStatement.setTimestamp(parameterIndex, x) }
     }
 
     override fun setTimestamp(parameterIndex: Int, x: Timestamp?, cal: Calendar?) {
-        backingStatement.setTimestamp(parameterIndex, x, cal)
+        addParameter { backingStatement.setTimestamp(parameterIndex, x, cal) }
     }
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?, length: Int) {
-        backingStatement.setAsciiStream(parameterIndex, x, length)
+        addParameter { backingStatement.setAsciiStream(parameterIndex, x, length) }
     }
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?, length: Long) {
-        backingStatement.setAsciiStream(parameterIndex, x, length)
+        addParameter { backingStatement.setAsciiStream(parameterIndex, x, length) }
     }
 
     override fun setAsciiStream(parameterIndex: Int, x: InputStream?) {
-        backingStatement.setAsciiStream(parameterIndex, x)
+        addParameter { backingStatement.setAsciiStream(parameterIndex, x) }
     }
 
     override fun setUnicodeStream(parameterIndex: Int, x: InputStream?, length: Int) {
         @Suppress("DEPRECATION")
-        backingStatement.setUnicodeStream(parameterIndex, x, length)
+        addParameter { backingStatement.setUnicodeStream(parameterIndex, x, length) }
     }
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?, length: Int) {
-        backingStatement.setBinaryStream(parameterIndex, x, length)
+        addParameter { backingStatement.setBinaryStream(parameterIndex, x, length) }
     }
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?, length: Long) {
-        backingStatement.setBinaryStream(parameterIndex, x, length)
+        addParameter { backingStatement.setBinaryStream(parameterIndex, x, length) }
     }
 
     override fun setBinaryStream(parameterIndex: Int, x: InputStream?) {
-        backingStatement.setBinaryStream(parameterIndex, x)
+        addParameter { backingStatement.setBinaryStream(parameterIndex, x) }
     }
 
     override fun clearParameters() {
@@ -423,47 +461,47 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
     }
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?, length: Int) {
-        backingStatement.setCharacterStream(parameterIndex, reader, length)
+        addParameter { backingStatement.setCharacterStream(parameterIndex, reader, length) }
     }
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?, length: Long) {
-        backingStatement.setCharacterStream(parameterIndex, reader, length)
+        addParameter { backingStatement.setCharacterStream(parameterIndex, reader, length) }
     }
 
     override fun setCharacterStream(parameterIndex: Int, reader: Reader?) {
-        backingStatement.setCharacterStream(parameterIndex, reader)
+        addParameter { backingStatement.setCharacterStream(parameterIndex, reader) }
     }
 
     override fun setRef(parameterIndex: Int, x: Ref?) {
-        backingStatement.setRef(parameterIndex, x)
+        addParameter { backingStatement.setRef(parameterIndex, x) }
     }
 
     override fun setBlob(parameterIndex: Int, x: Blob?) {
-        backingStatement.setBlob(parameterIndex, x)
+        addParameter { backingStatement.setBlob(parameterIndex, x) }
     }
 
     override fun setBlob(parameterIndex: Int, inputStream: InputStream?, length: Long) {
-        backingStatement.setBlob(parameterIndex, inputStream, length)
+        addParameter { backingStatement.setBlob(parameterIndex, inputStream, length) }
     }
 
     override fun setBlob(parameterIndex: Int, inputStream: InputStream?) {
-        backingStatement.setBlob(parameterIndex, inputStream)
+        addParameter { backingStatement.setBlob(parameterIndex, inputStream) }
     }
 
     override fun setClob(parameterIndex: Int, x: Clob?) {
-        backingStatement.setClob(parameterIndex, x)
+        addParameter { backingStatement.setClob(parameterIndex, x) }
     }
 
     override fun setClob(parameterIndex: Int, reader: Reader?, length: Long) {
-        backingStatement.setClob(parameterIndex, reader, length)
+        addParameter { backingStatement.setClob(parameterIndex, reader, length) }
     }
 
     override fun setClob(parameterIndex: Int, reader: Reader?) {
-        backingStatement.setClob(parameterIndex, reader)
+        addParameter { backingStatement.setClob(parameterIndex, reader) }
     }
 
     override fun setArray(parameterIndex: Int, x: java.sql.Array?) {
-        backingStatement.setArray(parameterIndex, x)
+        addParameter { backingStatement.setArray(parameterIndex, x) }
     }
 
     override fun getMetaData(): ResultSetMetaData {
@@ -471,7 +509,7 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
     }
 
     override fun setURL(parameterIndex: Int, x: URL?) {
-        backingStatement.setURL(parameterIndex, x)
+        addParameter { backingStatement.setURL(parameterIndex, x) }
     }
 
     override fun getParameterMetaData(): ParameterMetaData {
@@ -479,34 +517,34 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
     }
 
     override fun setRowId(parameterIndex: Int, x: RowId?) {
-        backingStatement.setRowId(parameterIndex, x)
+        addParameter { backingStatement.setRowId(parameterIndex, x) }
     }
 
     override fun setNString(parameterIndex: Int, value: String?) {
-        backingStatement.setNString(parameterIndex, value)
+        addParameter { backingStatement.setNString(parameterIndex, value) }
     }
 
     override fun setNCharacterStream(parameterIndex: Int, value: Reader?, length: Long) {
-        backingStatement.setNCharacterStream(parameterIndex, value, length)
+        addParameter { backingStatement.setNCharacterStream(parameterIndex, value, length) }
     }
 
     override fun setNCharacterStream(parameterIndex: Int, value: Reader?) {
-        backingStatement.setNCharacterStream(parameterIndex, value)
+        addParameter { backingStatement.setNCharacterStream(parameterIndex, value) }
     }
 
     override fun setNClob(parameterIndex: Int, value: NClob?) {
-        backingStatement.setNClob(parameterIndex, value)
+        addParameter { backingStatement.setNClob(parameterIndex, value) }
     }
 
     override fun setNClob(parameterIndex: Int, reader: Reader?, length: Long) {
-        backingStatement.setNClob(parameterIndex, reader, length)
+        addParameter { backingStatement.setNClob(parameterIndex, reader, length) }
     }
 
     override fun setNClob(parameterIndex: Int, reader: Reader?) {
-        backingStatement.setNClob(parameterIndex, reader)
+        addParameter { backingStatement.setNClob(parameterIndex, reader) }
     }
 
     override fun setSQLXML(parameterIndex: Int, xmlObject: SQLXML?) {
-        backingStatement.setSQLXML(parameterIndex, xmlObject)
+        addParameter { backingStatement.setSQLXML(parameterIndex, xmlObject) }
     }
 }

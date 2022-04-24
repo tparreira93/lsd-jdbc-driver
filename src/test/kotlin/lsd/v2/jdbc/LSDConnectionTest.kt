@@ -6,6 +6,43 @@ import org.junit.jupiter.api.Test
 class LSDConnectionTest {
     private val helper = Helper()
 
+    @Test
+    fun `Batched statement test`() {
+        val connection = helper.createLSDConnection()
+
+        val nextOrderIdStatement = connection.prepareFutureStatement("SELECT d_tax, d_next_o_id FROM bmsql_district WHERE d_w_id = ? AND d_id = ? FOR UPDATE")
+        nextOrderIdStatement.setInt(1, 1)
+        nextOrderIdStatement.setInt(2, 1)
+
+        val nextOrderId = nextOrderIdStatement.executeFutureQuery()
+
+        val incNextOrderId = connection.prepareFutureStatement("UPDATE bmsql_district set d_next_o_id = ? + 1 WHERE d_w_id = ? AND d_id = ?")
+        incNextOrderId.setFutureInt(1, nextOrderId.getFutureInt(2))
+        incNextOrderId.setInt(2, 1)
+        incNextOrderId.setInt(3, 1)
+        incNextOrderId.executeFutureUpdate()
+
+        val insertOrderStatement = connection.prepareFutureStatement("INSERT INTO bmsql_oorder (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (?, 7, 1, 2844, '2022-04-18 15:36:28.625+01', 8, 1 )")
+        insertOrderStatement.setFutureInt(1, nextOrderId.getFutureInt(2))
+        insertOrderStatement.executeFutureUpdate()
+
+        val newOrderStatement = connection.prepareFutureStatement("INSERT INTO bmsql_new_order (no_o_id, no_d_id, no_w_id) VALUES (?, 7, 1)")
+        newOrderStatement.setFutureInt(1, nextOrderId.getFutureInt(2))
+        newOrderStatement.executeFutureUpdate()
+
+        val lineBatch = connection.prepareFutureStatement("INSERT INTO bmsql_order_line (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info) " +
+                "VALUES (?, 7, 1, ?, 8646, 1, 6, 156.12, 'd3lFUIShl9C1R0cQPDJdmMoy')")
+
+        for (line in 1..300) {
+            lineBatch.setFutureInt(1, nextOrderId.getFutureInt(2))
+            lineBatch.setInt(2, line)
+            lineBatch.addFutureBatch()
+        }
+        lineBatch.executeFutureBatch()
+
+        connection.commit()
+    }
+
 //    @Test
     fun `This stuff works`() {
         val connection = helper.createLSDConnection()

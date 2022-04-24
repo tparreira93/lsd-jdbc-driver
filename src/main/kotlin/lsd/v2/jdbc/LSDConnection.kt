@@ -7,7 +7,7 @@ import java.util.*
 import java.util.concurrent.Executor
 import kotlin.collections.ArrayList
 
-class LSDConnection(url: String, props: Properties) : Connection, FutureConnection {
+class LSDConnection(url: String, props: Properties) : FutureConnection {
     private var connectionRollback: Boolean = false
     private val connection = createBackingConnection(url, props)
     private val futureStatements = ArrayList<Future<*>>()
