@@ -1,14 +1,15 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.6.10'
     id 'pl.allegro.tech.build.axion-release' version '1.13.6'
+    id 'maven-publish'
 }
 
-group 'org.example'
-version '1.0-SNAPSHOT'
+apply plugin: 'maven-publish'
 
 project.version = scmVersion.version
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
@@ -57,10 +58,32 @@ test {
     }
 }
 
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'trxsys'
+            artifactId = 'lsd.v2'
+            version = project.version
+
+            from components.kotlin
+        }
+    }
+}
+
 
 jar {
     // This line of code recursively collects and copies all of a project's files
     // and adds them to the JAR itself. One can extend this task, to skip certain
     // files or particular types at will
     from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+task copyJar {
+    dependsOn jar
+    doLast {
+        copy {
+            from 'build/libs'
+            into "C:\\Workspace\\thesis\\code\\benchmarksql_lsd_v2\\libs"
+        }
+    }
 }
