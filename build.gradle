@@ -6,8 +6,6 @@ plugins {
 
 apply plugin: 'maven-publish'
 
-project.version = scmVersion.version
-
 repositories {
     mavenLocal()
     mavenCentral()
@@ -48,6 +46,8 @@ scmVersion {
     }
 }
 
+project.version = scmVersion.version
+
 test {
     useJUnitPlatform()
 
@@ -63,7 +63,7 @@ publishing {
         maven(MavenPublication) {
             groupId = 'trxsys'
             artifactId = 'lsd.v2'
-            version = project.version
+            version = scmVersion.version
 
             from components.kotlin
         }
