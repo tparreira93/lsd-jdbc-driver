@@ -1,4 +1,5 @@
 import lsd.v2.Driver
+import lsd.v2.api.FutureConnection
 import lsd.v2.jdbc.LSDConnection
 import java.sql.Connection
 import java.sql.DriverManager
@@ -20,7 +21,7 @@ class Helper {
         return DriverManager.getConnection(properties.getProperty("connectionLSD"), properties)
     }
 
-    fun createLSDConnection(): LSDConnection {
+    fun createLSDConnection(): FutureConnection {
         DriverManager.registerDriver(lsd.v2.Driver())
         return DriverManager.getConnection(properties.getProperty("connectionLSD"), properties) as LSDConnection
     }
