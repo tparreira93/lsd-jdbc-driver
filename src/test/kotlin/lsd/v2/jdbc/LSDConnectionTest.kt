@@ -16,6 +16,10 @@ class LSDConnectionTest {
 
         val nextOrderId = nextOrderIdStatement.executeFutureQuery()
 
+        nextOrderIdStatement.afterQueryExecution {
+            println("Select result:" + it.get())
+        }
+
         val incNextOrderId = connection.prepareFutureStatement("UPDATE bmsql_district set d_next_o_id = ? + 1 WHERE d_w_id = ? AND d_id = ?")
         incNextOrderId.setFutureInt(1, nextOrderId.getFutureInt(2))
         incNextOrderId.setInt(2, 1)
@@ -30,6 +34,10 @@ class LSDConnectionTest {
         newOrderStatement.setFutureInt(1, nextOrderId.getFutureInt(2))
         newOrderStatement.executeFutureUpdate()
 
+        newOrderStatement.afterUpdateExecution {
+            println("Update result:" + it.get())
+        }
+
         val lineBatch = connection.prepareFutureStatement("INSERT INTO bmsql_order_line (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info) " +
                 "VALUES (?, 7, 1, ?, 8646, 1, 6, 156.12, 'd3lFUIShl9C1R0cQPDJdmMoy')")
 
@@ -39,6 +47,13 @@ class LSDConnectionTest {
             lineBatch.addFutureBatch()
         }
         lineBatch.executeFutureBatch()
+
+        lineBatch.afterBatchExecution {
+            println("Batch result:" + it.get())
+            if (it.get()[0] != 0) {
+                throw java.lang.RuntimeException("Something went wrong")
+            }
+        }
 
         connection.commit()
     }
@@ -67,7 +82,7 @@ class LSDConnectionTest {
 
         val connection2 = helper.createLSDConnection()
 
-        val taxValue = connection.prepareFutureStatement(
+        val taxValue = connection2.prepareFutureStatement(
             "SELECT d_tax_value FROM bmsql_district WHERE d_w_id = 1 AND d_id = 2 FOR UPDATE"
         ).executeFutureQuery()
 
@@ -82,12 +97,10 @@ class LSDConnectionTest {
 
         futureUpdate.setFutureFloat(1, taxValue.getFutureFloat(1))
 
-        connection2.commit()
-
         val stmt = connection2.prepareFutureStatement(
             "SELECT d_next_o_id FROM bmsql_district WHERE d_w_id = 1 AND d_id = 2123123213121231"
         )
-        stmt.then {
+        stmt.afterQueryExecution {
             if (futureUpdate.isClosed) {
                 println("I am closed")
             } else {

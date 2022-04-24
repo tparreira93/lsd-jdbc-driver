@@ -7,7 +7,9 @@ interface FutureStatement : Statement, Future<Boolean> {
 
     fun executeFutureUpdate()
 
-    fun then(future: () -> Unit)
+    fun afterQueryExecution(f: (OperationResultSet) -> Unit)
 
-    fun abort(exception: java.lang.Exception)
+    fun afterUpdateExecution(f: (UpdateOperationResult) -> Unit)
+
+    fun afterBatchExecution(f: (BatchOperationResult) -> Unit)
 }

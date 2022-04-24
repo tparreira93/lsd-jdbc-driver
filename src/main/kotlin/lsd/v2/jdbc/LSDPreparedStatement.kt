@@ -5,7 +5,6 @@ import lsd.v2.api.*
 import lsd.v2.util.ParameterList
 import java.io.InputStream
 import java.io.Reader
-import java.lang.Exception
 import java.math.BigDecimal
 import java.net.URL
 import java.sql.*
@@ -13,18 +12,37 @@ import java.sql.Date
 import java.util.*
 import kotlin.collections.ArrayList
 
-class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val backingStatement: PreparedStatement) : PreparedFutureStatement,
+class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val backingStatement: PreparedStatement) :
+    PreparedFutureStatement,
     PreparedStatement {
     private var future: Future<*>? = null
     private var executed: Boolean = false
     private var hasResults = false
-    private var then: Future<Unit>? = null
     private var isBatched = false
     private var currentParameters: ParameterList = ParameterList()
     private val parameters = ArrayList<ParameterList>()
+    private var futureResultSet: FutureResultSet? = null
+
+    private var afterQueryExec: ((res: OperationResultSet) -> Unit)? = null
+    private var afterBatchExec: ((res: BatchOperationResult) -> Unit)? = null
+    private var afterUpdateExec: ((res: UpdateOperationResult) -> Unit)? = null
 
     override fun toString(): String {
         return backingStatement.toString()
+    }
+
+    private fun executeAfterOp(result: Any?) {
+        when (val opResult = OperationResult.fromResult(result)) {
+            is OperationResultSet -> {
+                afterQueryExec?.invoke(opResult)
+            }
+            is BatchOperationResult -> {
+                afterBatchExec?.invoke(opResult)
+            }
+            is UpdateOperationResult -> {
+                afterUpdateExec?.invoke(opResult)
+            }
+        }
     }
 
     override fun resolve(): Boolean {
@@ -38,7 +56,7 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
                 currentParameters.resolve()
             }
 
-            future!!.resolve()
+            val result = future!!.resolve()
             executed = true
 
             if (hasOpenResultSet()) {
@@ -46,7 +64,7 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
                 if (!hasResults) backingStatement.resultSet.close()
             }
 
-            then?.resolve()
+            executeAfterOp(result)
 
             if (lsdConnection.hasRolledBack()) {
                 throw RollbackException()
@@ -60,11 +78,12 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         if (hasOpenResultSet()) {
             resultSet.close()
         }
-        then?.dispose()
         future = null
         executed = false
         hasResults = false
-        then = null
+        afterQueryExec = null
+        afterBatchExec = null
+        afterUpdateExec = null
 
         for (p in parameters) {
             p.clear()
@@ -84,13 +103,14 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
 
     override fun executeFutureQuery(): FutureResultSet {
         if (future != null) {
-            return LSDResultSet(this)
+            return futureResultSet!!
         }
 
         future = FutureRunner { backingStatement.executeQuery() }
         lsdConnection.addFutureStatement(this)
+        futureResultSet = LSDResultSet(this)
 
-        return LSDResultSet(this)
+        return futureResultSet!!
     }
 
     override fun executeFutureUpdate() {
@@ -134,12 +154,16 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         return backingStatement.executeQuery()
     }
 
-    override fun then(future: () -> Unit) {
-        then = FutureRunner { future.invoke() }
+    override fun afterQueryExecution(f: (OperationResultSet) -> Unit) {
+        afterQueryExec = f
     }
 
-    override fun abort(exception: Exception) {
-        throw exception
+    override fun afterUpdateExecution(f: (UpdateOperationResult) -> Unit) {
+        afterUpdateExec = f
+    }
+
+    override fun afterBatchExecution(f: (BatchOperationResult) -> Unit) {
+        afterBatchExec = f
     }
 
     private fun addParameter(f: () -> Unit) {
