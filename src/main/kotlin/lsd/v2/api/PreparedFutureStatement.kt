@@ -7,6 +7,7 @@ interface PreparedFutureStatement : PreparedStatement, FutureStatement {
     fun setFutureDouble(parameterIndex: Int, x: Future<Double>)
     fun setFutureFloat(parameterIndex: Int, x: Future<Float>)
     fun setFutureString(parameterIndex: Int, x: Future<String>)
+    fun setFutureObject(parameterIndex: Int, x: Future<Any>)
 
     fun addFutureBatch()
     fun executeFutureBatch()
