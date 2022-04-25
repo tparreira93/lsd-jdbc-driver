@@ -70,6 +70,20 @@ class LSDResultSet(private val futureStatement: FutureStatement) : FutureResultS
         }
     }
 
+    override fun getFutureTimestamp(columnIndex: Int): Future<Timestamp> {
+        return FutureRunner {
+            futureStatement.resolve()
+            futureStatement.resultSet.getTimestamp(columnIndex)
+        }
+    }
+
+    override fun getFutureTimestamp(columnLabel: String?): Future<Timestamp> {
+        return FutureRunner {
+            futureStatement.resolve()
+            futureStatement.resultSet.getTimestamp(columnLabel)
+        }
+    }
+
     override fun getFutureString(columnIndex: Int): Future<String> {
         return FutureRunner {
             futureStatement.resolve()

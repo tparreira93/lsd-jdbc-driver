@@ -207,6 +207,10 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         addParameter({ backingStatement.setObject(parameterIndex, x.resolve()) }, true)
     }
 
+    override fun setFutureTimestamp(parameterIndex: Int, x: Future<Timestamp>) {
+        addParameter({ backingStatement.setObject(parameterIndex, x.resolve()) }, true)
+    }
+
     override fun <T : Any?> unwrap(iface: Class<T>?): T {
         TODO("Not yet implemented")
     }

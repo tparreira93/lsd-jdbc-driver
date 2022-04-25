@@ -1,6 +1,7 @@
 package lsd.v2.api
 
 import java.sql.ResultSet
+import java.sql.Timestamp
 
 interface FutureResultSet : ResultSet {
     fun getFutureObject(columnIndex: Int): Future<Any>
@@ -26,4 +27,8 @@ interface FutureResultSet : ResultSet {
     fun getFutureDouble(columnIndex: Int): Future<Double>
 
     fun getFutureDouble(columnLabel: String?): Future<Double>
+
+    fun getFutureTimestamp(columnIndex: Int): Future<Timestamp>
+
+    fun getFutureTimestamp(columnLabel: String?): Future<Timestamp>
 }
