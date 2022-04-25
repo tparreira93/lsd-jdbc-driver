@@ -104,8 +104,9 @@ class LSDConnection(url: String, props: Properties) : FutureConnection {
 
     override fun commit() {
         try {
-            for (statement in futureStatements) {
-                statement.resolve()
+            var i = 0
+            while (i < futureStatements.size) {
+                futureStatements[i++].resolve()
             }
             connection.commit()
         } catch (e: RollbackException){
