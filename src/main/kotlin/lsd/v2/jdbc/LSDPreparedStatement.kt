@@ -17,7 +17,6 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
     PreparedStatement {
     private var future: Future<*>? = null
     private var executed: Boolean = false
-    private var hasResults = false
     private var isBatched = false
     private var currentParameters: ParameterList = ParameterList()
     private val parameters = ArrayList<ParameterList>()
@@ -45,33 +44,44 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         }
     }
 
-    override fun resolve(): Boolean {
-        if (!executed && future != null) {
-            if (isBatched) {
-                for (f in parameters) {
-                    f.resolve()
-                    backingStatement.addBatch()
-                }
-            } else {
-                currentParameters.resolve()
+    private fun resolveParameters() {
+        if (isBatched) {
+            for (f in parameters) {
+                f.resolve()
+                backingStatement.addBatch()
             }
+        } else {
+            currentParameters.resolve()
+        }
+    }
 
-            val result = future!!.resolve()
-            executed = true
+    private fun prepareExec(f: () -> Any): Any {
+        prepareResolve()
+        val result = f.invoke()
+        afterResolve(result)
 
-            if (hasOpenResultSet()) {
-                hasResults = backingStatement.resultSet.next()
-                if (!hasResults) backingStatement.resultSet.close()
-            }
+        return result
+    }
 
-            executeAfterOp(result)
+    private fun prepareResolve() {
+        resolveParameters()
+    }
 
-            if (lsdConnection.hasRolledBack()) {
-                throw RollbackException()
-            }
+    private fun afterResolve(result: Any) {
+        if (hasOpenResultSet()) {
+            if (!backingStatement.resultSet.next())
+                backingStatement.resultSet.close()
         }
 
-        return hasResults
+        executeAfterOp(result)
+
+        if (lsdConnection.hasRolledBack()) {
+            throw RollbackException()
+        }
+    }
+
+    override fun resolve(): Any {
+        return future!!.resolve()!!
     }
 
     override fun dispose() {
@@ -80,7 +90,6 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         }
         future = null
         executed = false
-        hasResults = false
         afterQueryExec = null
         afterBatchExec = null
         afterUpdateExec = null
@@ -106,7 +115,7 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
             return futureResultSet!!
         }
 
-        future = FutureRunner { backingStatement.executeQuery() }
+        future = CachedFuture { prepareExec { backingStatement.executeQuery() } }
         lsdConnection.addFutureStatement(this)
         futureResultSet = LSDResultSet(this)
 
@@ -118,7 +127,7 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
             return
         }
 
-        future = FutureRunner { backingStatement.executeUpdate() }
+        future = CachedFuture { prepareExec { backingStatement.executeUpdate() } }
         lsdConnection.addFutureStatement(this)
     }
 
@@ -126,7 +135,7 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         if (future != null) {
             return
         }
-        future = FutureRunner { backingStatement.executeBatch() }
+        future = CachedFuture { prepareExec { backingStatement.executeBatch() } }
         lsdConnection.addFutureStatement(this)
     }
 
@@ -172,7 +181,7 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
 
     private fun addParameter(f: () -> Unit, realFuture: Boolean) {
         if (isBatched || realFuture) {
-            currentParameters.add(FutureRunner(f))
+            currentParameters.add(CachedFuture(f))
         } else {
             f.invoke()
         }

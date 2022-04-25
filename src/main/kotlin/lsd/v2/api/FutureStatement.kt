@@ -2,7 +2,7 @@ package lsd.v2.api
 
 import java.sql.Statement
 
-interface FutureStatement : Statement, Future<Boolean> {
+interface FutureStatement : Statement, Future<Any> {
     fun executeFutureQuery(): FutureResultSet
 
     fun executeFutureUpdate()
