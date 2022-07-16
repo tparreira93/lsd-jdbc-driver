@@ -311,7 +311,7 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         return backingStatement.execute(sql, columnNames)
     }
 
-    override fun getResultSet(): ResultSet {
+    override fun getResultSet(): ResultSet? {
         return backingStatement.resultSet
     }
 
