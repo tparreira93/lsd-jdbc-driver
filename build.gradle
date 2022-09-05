@@ -62,7 +62,7 @@ publishing {
     publications {
         maven(MavenPublication) {
             groupId = 'trxsys'
-            artifactId = 'lsd.v2'
+            artifactId = 'lsd'
             version = scmVersion.version
 
             from components.kotlin

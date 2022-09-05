@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
-Main-Class: lsd.v2.util.LSDJDBCMain
-Automatic-Module-Name: lsd.v2.driver.jdbc
+Main-Class: trxsys.lsd.util.LSDJDBCMain
+Automatic-Module-Name: lsd.driver.jdbc
 Implementation-Vendor-Id: lsd
 Implementation-Version: 1.0
 Implementation-Title: LSD JDBC Driver

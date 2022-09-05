@@ -1,6 +1,6 @@
-import lsd.v2.Driver
-import lsd.v2.api.FutureConnection
-import lsd.v2.jdbc.LSDConnection
+import trxsys.lsd.Driver
+import trxsys.lsd.api.FutureConnection
+import trxsys.lsd.jdbc.LSDConnection
 import java.sql.Connection
 import java.sql.DriverManager
 import java.util.*
@@ -22,7 +22,7 @@ class Helper {
     }
 
     fun createLSDConnection(): FutureConnection {
-        DriverManager.registerDriver(lsd.v2.Driver())
+        DriverManager.registerDriver(Driver())
         return DriverManager.getConnection(properties.getProperty("connectionLSD"), properties) as LSDConnection
     }
 
