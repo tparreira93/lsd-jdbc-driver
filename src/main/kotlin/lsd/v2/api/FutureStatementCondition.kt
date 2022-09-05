@@ -1,5 +1,7 @@
 package lsd.v2.api
 
+import lsd.v2.future.Future
+
 interface FutureStatementCondition : FutureCondition {
     fun setInt(index: Int, x: Int)
     fun setFloat(index: Int, x: Float)

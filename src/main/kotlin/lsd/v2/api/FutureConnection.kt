@@ -9,5 +9,6 @@ interface FutureConnection: Connection {
 
     fun prepareFutureStatement(sql: String?, resultSetType: Int, resultSetConcurrency: Int, resultSetHoldability: Int): PreparedFutureStatement
 
+    fun isTrue(condition: () -> Boolean) : FutureCondition
     fun isTrue(condition: String): FutureStatementCondition
 }

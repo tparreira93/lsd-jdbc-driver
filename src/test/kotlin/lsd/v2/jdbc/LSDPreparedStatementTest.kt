@@ -4,7 +4,7 @@ import Helper
 import org.junit.jupiter.api.Test
 import java.sql.PreparedStatement
 
-private const val nextOrderId = "SELECT d_next_o_id, d_tax FROM bmsql_district WHERE d_w_id = ? AND d_id = ?"
+public const val nextOrderId = "SELECT d_next_o_id, d_tax FROM bmsql_district WHERE d_w_id = ? AND d_id = ?"
 
 private const val updateNextOrderId = "UPDATE bmsql_district set d_next_o_id = ? + 1 WHERE d_w_id = ? AND d_id = ?"
 
@@ -28,7 +28,6 @@ internal class LSDPreparedStatementTest{
     @Test
     fun `Select statement is resolved at commit time`() {
         val connection = helper.createLSDConnection()
-        connection.autoCommit = false
 
         val nextOrderIdStatement = connection.prepareFutureStatement(nextOrderId)
         prepareNextOrderId(nextOrderIdStatement)
@@ -66,6 +65,11 @@ internal class LSDPreparedStatementTest{
         incNextOrderId.setInt(2, 1)
         incNextOrderId.setInt(3, 1)
         incNextOrderId.executeFutureUpdate()
+
+        assert(initialValue == prepareStatement.executeQuery().let {
+            it.next()
+            it.getInt(1)
+        })
 
         futureConnection.commit()
 

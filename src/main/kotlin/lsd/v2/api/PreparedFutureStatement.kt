@@ -1,5 +1,6 @@
 package lsd.v2.api
 
+import lsd.v2.future.Future
 import java.sql.PreparedStatement
 import java.sql.Timestamp
 
@@ -11,6 +12,7 @@ interface PreparedFutureStatement : PreparedStatement, FutureStatement {
     fun setFutureObject(parameterIndex: Int, x: Future<Any>)
     fun setFutureTimestamp(parameterIndex: Int, x: Future<Timestamp>)
 
+    fun executeFutureQuery(): FutureResultSet
+    fun executeFutureUpdate(): FutureResultConsumer<Int>
     fun addFutureBatch()
-    fun executeFutureBatch()
 }

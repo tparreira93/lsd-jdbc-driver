@@ -1,9 +1,11 @@
 package lsd.v2.api
 
+import lsd.v2.future.Future
+import lsd.v2.future.ResultConsumer
 import java.sql.ResultSet
 import java.sql.Timestamp
 
-interface FutureResultSet : ResultSet {
+interface FutureResultSet: Future<ResultSet>, ResultConsumer<ResultSet>, ResultSet {
     fun getFutureObject(columnIndex: Int): Future<Any>
 
     fun getFutureObject(columnLabel: String?): Future<Any>

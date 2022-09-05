@@ -1,9 +1,7 @@
 package lsd.v2.jdbc
 
-import lsd.v2.api.Future
-import lsd.v2.api.FutureResultSet
-import lsd.v2.api.FutureStatement
-import lsd.v2.api.FutureRunner
+import lsd.v2.api.*
+import lsd.v2.future.*
 import java.io.InputStream
 import java.io.Reader
 import java.math.BigDecimal
@@ -12,104 +10,84 @@ import java.sql.*
 import java.sql.Array
 import java.sql.Date
 import java.util.*
+import java.util.function.Consumer
 
-class LSDResultSet(private val futureStatement: FutureStatement) : FutureResultSet {
-    override fun getFutureInt(columnIndex: Int): Future<Int> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getInt(columnIndex)
+class LSDResultSet(private val futureResultSet: Future<ResultSet>) : FutureResultSet {
+    private var resultSet: ResultSet? = null
+    private var first: Boolean = false
+    private var hasResults: Boolean = false
+    private var consumer: Consumer<ResultSet>? = null
+    override fun resolve(): ResultSet {
+        resultSet = futureResultSet.resolve()
+        if (!first) {
+            if (resultSet == null)
+                throw NullPointerException("Result set has not been resolved properly before get future call")
+            hasResults = resultSet!!.next()
+            first = true
+
+            consumer?.accept(resultSet!!)
         }
+        return resultSet!!
+    }
+
+    override fun then(function: Consumer<ResultSet>) {
+        this.consumer = function
+    }
+    
+    override fun getFutureInt(columnIndex: Int): Future<Int> {
+        return FutureGetIntIndex(this, columnIndex)
     }
 
     override fun getFutureInt(columnLabel: String?): Future<Int> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getInt(columnLabel)
-        }
+        return FutureGetIntName(this, columnLabel!!)
     }
 
     override fun getFutureLong(columnIndex: Int): Future<Long> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getLong(columnIndex)
-        }
+        return FutureGetLongIndex(this, columnIndex)
     }
 
     override fun getFutureLong(columnLabel: String?): Future<Long> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getLong(columnLabel)
-        }
+        return FutureGetLongName(this, columnLabel!!)
     }
 
     override fun getFutureFloat(columnIndex: Int): Future<Float> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getFloat(columnIndex)
-        }
+        return FutureGetFloatIndex(this, columnIndex)
     }
 
     override fun getFutureFloat(columnLabel: String?): Future<Float> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getFloat(columnLabel)
-        }
+        return FutureGetFloatName(this, columnLabel!!)
     }
 
     override fun getFutureDouble(columnIndex: Int): Future<Double> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getDouble(columnIndex)
-        }
+        return FutureGetDoubleIndex(this, columnIndex)
     }
 
     override fun getFutureDouble(columnLabel: String?): Future<Double> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getDouble(columnLabel)
-        }
+        return FutureGetDoubleName(this, columnLabel!!)
     }
 
     override fun getFutureTimestamp(columnIndex: Int): Future<Timestamp> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getTimestamp(columnIndex)
-        }
+        return FutureGetTimestampIndex(this, columnIndex)
     }
 
     override fun getFutureTimestamp(columnLabel: String?): Future<Timestamp> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getTimestamp(columnLabel)
-        }
+        return FutureGetTimestampName(this, columnLabel!!)
     }
 
     override fun getFutureString(columnIndex: Int): Future<String> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getString(columnIndex)
-        }
+        return FutureGetStringIndex(this, columnIndex)
     }
 
     override fun getFutureString(columnLabel: String?): Future<String> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getString(columnLabel)
-        }
+        return FutureGetStringName(this, columnLabel!!)
     }
 
     override fun getFutureObject(columnIndex: Int): Future<Any> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getObject(columnIndex)
-        }
+        return FutureGetObjectIndex(this, columnIndex)
     }
 
     override fun getFutureObject(columnLabel: String?): Future<Any> {
-        return FutureRunner {
-            futureStatement.resolve()
-            futureStatement.resultSet.getObject(columnLabel)
-        }
+        return FutureGetObjectName(this, columnLabel!!)
     }
 
     override fun getObject(columnIndex: Int): Any {

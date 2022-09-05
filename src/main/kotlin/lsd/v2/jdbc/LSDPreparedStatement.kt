@@ -1,7 +1,9 @@
 package lsd.v2.jdbc
 
-import lsd.v2.RollbackException
 import lsd.v2.api.*
+import lsd.v2.future.CachedFuture
+import lsd.v2.future.Future
+import lsd.v2.future.FutureUtils
 import lsd.v2.util.ParameterList
 import java.io.InputStream
 import java.io.Reader
@@ -12,37 +14,14 @@ import java.sql.Date
 import java.util.*
 import kotlin.collections.ArrayList
 
-class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val backingStatement: PreparedStatement) :
-    PreparedFutureStatement,
-    PreparedStatement {
+class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val backingStatement: PreparedStatement)
+    : LSDStatement(lsdConnection, backingStatement), PreparedFutureStatement {
     private var future: Future<*>? = null
     private var executed: Boolean = false
     private var isBatched = false
     private var currentParameters: ParameterList = ParameterList()
     private val parameters = ArrayList<ParameterList>()
     private var futureResultSet: FutureResultSet? = null
-
-    private var afterQueryExec: ((res: OperationResultSet) -> Unit)? = null
-    private var afterBatchExec: ((res: BatchOperationResult) -> Unit)? = null
-    private var afterUpdateExec: ((res: UpdateOperationResult) -> Unit)? = null
-
-    override fun toString(): String {
-        return backingStatement.toString()
-    }
-
-    private fun executeAfterOp(result: Any?) {
-        when (val opResult = OperationResult.fromResult(result)) {
-            is OperationResultSet -> {
-                afterQueryExec?.invoke(opResult)
-            }
-            is BatchOperationResult -> {
-                afterBatchExec?.invoke(opResult)
-            }
-            is UpdateOperationResult -> {
-                afterUpdateExec?.invoke(opResult)
-            }
-        }
-    }
 
     private fun resolveParameters() {
         if (isBatched) {
@@ -55,29 +34,14 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         }
     }
 
-    private fun prepareExec(f: () -> Any): Any {
+    private fun <T> prepareExec(f: () -> T): T {
         prepareResolve()
-        val result = f.invoke()
-        afterResolve(result)
 
-        return result
+        return f.invoke()
     }
 
     private fun prepareResolve() {
         resolveParameters()
-    }
-
-    private fun afterResolve(result: Any) {
-        if (hasOpenResultSet()) {
-            if (!backingStatement.resultSet.next())
-                backingStatement.resultSet.close()
-        }
-
-        executeAfterOp(result)
-
-        if (lsdConnection.hasRolledBack()) {
-            throw RollbackException()
-        }
     }
 
     override fun resolve(): Any {
@@ -85,23 +49,13 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
     }
 
     override fun dispose() {
-        if (hasOpenResultSet()) {
-            resultSet.close()
-        }
-        future = null
-        executed = false
-        afterQueryExec = null
-        afterBatchExec = null
-        afterUpdateExec = null
+        super<LSDStatement>.dispose()
 
         for (p in parameters) {
             p.clear()
         }
 
-        if (isBatched) {
-            backingStatement.clearParameters()
-            backingStatement.clearBatch()
-        }
+        backingStatement.clearParameters()
     }
 
     override fun addFutureBatch() {
@@ -111,32 +65,29 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
     }
 
     override fun executeFutureQuery(): FutureResultSet {
-        if (future != null) {
-            return futureResultSet!!
-        }
+        val futureQuery = CachedFuture { prepareExec { backingStatement.executeQuery() } }
 
-        future = CachedFuture { prepareExec { backingStatement.executeQuery() } }
+        future = futureQuery
         lsdConnection.addFutureStatement(this)
-        futureResultSet = LSDResultSet(this)
+        futureResultSet = LSDResultSet(futureQuery)
 
         return futureResultSet!!
     }
 
-    override fun executeFutureUpdate() {
-        if (future != null) {
-            return
-        }
-
-        future = CachedFuture { prepareExec { backingStatement.executeUpdate() } }
+    override fun executeFutureUpdate(): FutureResultConsumer<Int> {
+        val futureUpdate = CachedFuture { prepareExec { backingStatement.executeUpdate() } }
+        future = futureUpdate
         lsdConnection.addFutureStatement(this)
+
+        return FutureResultConsumer(futureUpdate)
     }
 
-    override fun executeFutureBatch() {
-        if (future != null) {
-            return
-        }
-        future = CachedFuture { prepareExec { backingStatement.executeBatch() } }
+    override fun executeFutureBatch(): FutureResultConsumer<IntArray> {
+        val futureBatch = CachedFuture { prepareExec { backingStatement.executeBatch() } }
+        future = futureBatch
         lsdConnection.addFutureStatement(this)
+
+        return FutureResultConsumer(futureBatch)
     }
 
     override fun addBatch() {
@@ -144,35 +95,11 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
     }
 
     override fun addBatch(sql: String?) {
-        backingStatement.addBatch(sql)
-    }
-
-    override fun clearBatch() {
-        backingStatement.clearBatch()
+        throw java.lang.UnsupportedOperationException("Operation not supported in FuturePreparedStatement")
     }
 
     override fun executeBatch(): IntArray {
-        return backingStatement.executeBatch()
-    }
-
-    private fun hasOpenResultSet(): Boolean {
-        return backingStatement.resultSet != null && !backingStatement.resultSet?.isClosed!!
-    }
-
-    override fun executeQuery(): ResultSet {
-        return backingStatement.executeQuery()
-    }
-
-    override fun afterQueryExecution(f: (OperationResultSet) -> Unit) {
-        afterQueryExec = f
-    }
-
-    override fun afterUpdateExecution(f: (UpdateOperationResult) -> Unit) {
-        afterUpdateExec = f
-    }
-
-    override fun afterBatchExecution(f: (BatchOperationResult) -> Unit) {
-        afterBatchExec = f
+        throw java.lang.UnsupportedOperationException("Operation not supported in FuturePreparedStatement")
     }
 
     private fun addParameter(f: () -> Unit) {
@@ -181,7 +108,7 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
 
     private fun addParameter(f: () -> Unit, realFuture: Boolean) {
         if (isBatched || realFuture) {
-            currentParameters.add(CachedFuture(f))
+            currentParameters.add(FutureUtils.newCachedFuture(f))
         } else {
             f.invoke()
         }
@@ -211,176 +138,16 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         addParameter({ backingStatement.setObject(parameterIndex, x.resolve()) }, true)
     }
 
-    override fun <T : Any?> unwrap(iface: Class<T>?): T {
-        TODO("Not yet implemented")
-    }
-
-    override fun isWrapperFor(iface: Class<*>?): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun close() {
-        backingStatement.close()
-    }
-
-    override fun executeQuery(sql: String?): ResultSet {
-        return backingStatement.executeQuery(sql)
+    override fun executeQuery(): ResultSet {
+        throw java.lang.UnsupportedOperationException("Operation not supported in FuturePreparedStatement")
     }
 
     override fun executeUpdate(): Int {
-        return backingStatement.executeUpdate()
-    }
-
-    override fun executeUpdate(sql: String?): Int {
-        return backingStatement.executeUpdate(sql)
-    }
-
-    override fun executeUpdate(sql: String?, autoGeneratedKeys: Int): Int {
-        return backingStatement.executeUpdate(sql, autoGeneratedKeys)
-    }
-
-    override fun executeUpdate(sql: String?, columnIndexes: IntArray?): Int {
-        return backingStatement.executeUpdate(sql, columnIndexes)
-    }
-
-    override fun executeUpdate(sql: String?, columnNames: Array<out String>?): Int {
-        return backingStatement.executeUpdate(sql, columnNames)
-    }
-
-    override fun getMaxFieldSize(): Int {
-        return backingStatement.maxFieldSize
-    }
-
-    override fun setMaxFieldSize(max: Int) {
-        backingStatement.maxFieldSize = max
-    }
-
-    override fun getMaxRows(): Int {
-        return backingStatement.maxRows
-    }
-
-    override fun setMaxRows(max: Int) {
-        backingStatement.maxRows = maxRows
-    }
-
-    override fun setEscapeProcessing(enable: Boolean) {
-        backingStatement.setEscapeProcessing(enable)
-    }
-
-    override fun getQueryTimeout(): Int {
-        return backingStatement.queryTimeout
-    }
-
-    override fun setQueryTimeout(seconds: Int) {
-        backingStatement.queryTimeout = seconds
-    }
-
-    override fun cancel() {
-        backingStatement.cancel()
-    }
-
-    override fun getWarnings(): SQLWarning {
-        return backingStatement.warnings
-    }
-
-    override fun clearWarnings() {
-        backingStatement.clearWarnings()
-    }
-
-    override fun setCursorName(name: String?) {
-        backingStatement.setCursorName(name)
+        throw java.lang.UnsupportedOperationException("Operation not supported in FuturePreparedStatement")
     }
 
     override fun execute(): Boolean {
-        return backingStatement.execute()
-    }
-
-    override fun execute(sql: String?): Boolean {
-        return backingStatement.execute(sql)
-    }
-
-    override fun execute(sql: String?, autoGeneratedKeys: Int): Boolean {
-        return backingStatement.execute(sql, autoGeneratedKeys)
-    }
-
-    override fun execute(sql: String?, columnIndexes: IntArray?): Boolean {
-        return backingStatement.execute(sql, columnIndexes)
-    }
-
-    override fun execute(sql: String?, columnNames: Array<out String>?): Boolean {
-        return backingStatement.execute(sql, columnNames)
-    }
-
-    override fun getResultSet(): ResultSet? {
-        return backingStatement.resultSet
-    }
-
-    override fun getUpdateCount(): Int {
-        return backingStatement.updateCount
-    }
-
-    override fun getMoreResults(): Boolean {
-        return backingStatement.moreResults
-    }
-
-    override fun getMoreResults(current: Int): Boolean {
-        return backingStatement.moreResults
-    }
-
-    override fun setFetchDirection(direction: Int) {
-        backingStatement.fetchDirection = direction
-    }
-
-    override fun getFetchDirection(): Int {
-        return backingStatement.fetchDirection
-    }
-
-    override fun setFetchSize(rows: Int) {
-        backingStatement.fetchDirection = rows
-    }
-
-    override fun getFetchSize(): Int {
-        return backingStatement.fetchSize
-    }
-
-    override fun getResultSetConcurrency(): Int {
-        return backingStatement.resultSetConcurrency
-    }
-
-    override fun getResultSetType(): Int {
-        return backingStatement.resultSetType
-    }
-
-    override fun getConnection(): Connection {
-        return backingStatement.connection
-    }
-
-    override fun getGeneratedKeys(): ResultSet {
-        return backingStatement.generatedKeys
-    }
-
-    override fun getResultSetHoldability(): Int {
-        return backingStatement.resultSetHoldability
-    }
-
-    override fun isClosed(): Boolean {
-        return backingStatement.isClosed
-    }
-
-    override fun setPoolable(poolable: Boolean) {
-        backingStatement.isPoolable = poolable
-    }
-
-    override fun isPoolable(): Boolean {
-        return backingStatement.isPoolable
-    }
-
-    override fun closeOnCompletion() {
-        backingStatement.closeOnCompletion()
-    }
-
-    override fun isCloseOnCompletion(): Boolean {
-        return backingStatement.isCloseOnCompletion
+        throw java.lang.UnsupportedOperationException("Operation not supported in FuturePreparedStatement")
     }
 
     override fun setNull(parameterIndex: Int, sqlType: Int) {

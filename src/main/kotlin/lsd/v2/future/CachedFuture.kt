@@ -1,4 +1,4 @@
-package lsd.v2.api
+package lsd.v2.future
 
 class CachedFuture<T>(private val f: Future<T>) : Future<T> {
     private var hasExecuted = false

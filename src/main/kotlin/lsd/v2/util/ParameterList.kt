@@ -1,6 +1,6 @@
 package lsd.v2.util
 
-import lsd.v2.api.Future
+import lsd.v2.future.Future
 
 
 class ParameterList : Future<Unit> {

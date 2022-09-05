@@ -2,6 +2,7 @@ package lsd.v2.jdbc
 
 import lsd.v2.RollbackException
 import lsd.v2.api.*
+import lsd.v2.future.Future
 import java.sql.*
 import java.util.*
 import java.util.concurrent.Executor
@@ -63,15 +64,12 @@ class LSDConnection(url: String, props: Properties) : FutureConnection {
         )
     }
 
+    override fun isTrue(condition: () -> Boolean): FutureCondition {
+        return LSDIsTrue(condition)
+    }
+
     override fun isTrue(condition: String): FutureStatementCondition {
-        val backingStatement = futurePreparedStatement(connection.prepareStatement("SELECT $condition;"))
-        backingStatement.executeFutureQuery()
-
-        val isTrue = LSDIsTrue(backingStatement)
-
-        futureStatements.add(isTrue)
-
-        return isTrue
+        return LSDIsTrueStatement(this, "SELECT $condition;")
     }
 
     override fun prepareStatement(sql: String?): PreparedStatement {
@@ -109,6 +107,10 @@ class LSDConnection(url: String, props: Properties) : FutureConnection {
             while (i < size) {
                 futureStatements[i++].resolve()
                 size = futureStatements.size
+
+                if (hasRolledBack()) {
+                    throw RollbackException()
+                }
             }
             connection.commit()
         } catch (e: RollbackException){
