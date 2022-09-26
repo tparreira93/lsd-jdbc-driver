@@ -1,6 +1,7 @@
 package trxsys.lsd.api
 
 import trxsys.lsd.future.Future
+import java.math.BigDecimal
 import java.sql.PreparedStatement
 import java.sql.Timestamp
 
@@ -11,6 +12,7 @@ interface PreparedFutureStatement : PreparedStatement, FutureStatement {
     fun setFutureString(parameterIndex: Int, x: Future<String>)
     fun setFutureObject(parameterIndex: Int, x: Future<Any>)
     fun setFutureTimestamp(parameterIndex: Int, x: Future<Timestamp>)
+    fun setFutureBigDecimal(parameterIndex: Int, x: Future<BigDecimal>)
 
     fun executeFutureQuery(): FutureResultSet
     fun executeFutureUpdate(): FutureResultChain<Int>

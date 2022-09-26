@@ -138,6 +138,9 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
     override fun setFutureTimestamp(parameterIndex: Int, x: Future<Timestamp>) {
         addParameter({ backingStatement.setObject(parameterIndex, x.resolve()) }, true)
     }
+    override fun setFutureBigDecimal(parameterIndex: Int, x: Future<BigDecimal>) {
+        addParameter({ backingStatement.setBigDecimal(parameterIndex, x.resolve()) }, true)
+    }
 
     override fun executeQuery(): ResultSet {
         throw java.lang.UnsupportedOperationException("Operation not supported in FuturePreparedStatement")
