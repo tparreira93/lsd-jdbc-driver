@@ -17,7 +17,6 @@ import kotlin.collections.ArrayList
 class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val backingStatement: PreparedStatement)
     : LSDStatement(lsdConnection, backingStatement), PreparedFutureStatement {
     private var future: Future<*>? = null
-    private var executed: Boolean = false
     private var isBatched = false
     private var currentParameters: ParameterList = ParameterList()
     private val parameters = ArrayList<ParameterList>()
@@ -68,26 +67,28 @@ class LSDPreparedStatement(private val lsdConnection: LSDConnection, private val
         val futureQuery = CachedFuture { prepareExec { backingStatement.executeQuery() } }
 
         future = futureQuery
-        lsdConnection.addFutureStatement(this)
+        lsdConnection.addFuture(this)
         futureResultSet = LSDResultSet(futureQuery)
 
         return futureResultSet!!
     }
 
-    override fun executeFutureUpdate(): FutureResultConsumer<Int> {
+    override fun executeFutureUpdate(): FutureResultChain<Int> {
         val futureUpdate = CachedFuture { prepareExec { backingStatement.executeUpdate() } }
-        future = futureUpdate
-        lsdConnection.addFutureStatement(this)
+        val futureResultConsumer = FutureResultChain(futureUpdate)
+        future = futureResultConsumer
+        lsdConnection.addFuture(this)
 
-        return FutureResultConsumer(futureUpdate)
+        return futureResultConsumer
     }
 
-    override fun executeFutureBatch(): FutureResultConsumer<IntArray> {
+    override fun executeFutureBatch(): FutureResultChain<IntArray> {
         val futureBatch = CachedFuture { prepareExec { backingStatement.executeBatch() } }
-        future = futureBatch
-        lsdConnection.addFutureStatement(this)
+        val futureResultConsumer = FutureResultChain(futureBatch)
+        future = futureResultConsumer
+        lsdConnection.addFuture(this)
 
-        return FutureResultConsumer(futureBatch)
+        return futureResultConsumer
     }
 
     override fun addBatch() {

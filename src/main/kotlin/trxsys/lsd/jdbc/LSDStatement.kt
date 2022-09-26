@@ -30,28 +30,30 @@ open class LSDStatement(private val lsdConnection: LSDConnection, private val ba
         val futureQuery = FutureUtils.newCachedFuture { backingStatement.executeQuery(sql) }
         future = futureQuery
 
-        lsdConnection.addFutureStatement(this)
+        lsdConnection.addFuture(this)
         futureResultSet = LSDResultSet(futureQuery)
 
         return futureResultSet!!
     }
 
-    override fun executeFutureBatch(): FutureResultConsumer<IntArray> {
+    override fun executeFutureBatch(): FutureResultChain<IntArray> {
         val futureBatch = FutureUtils.newCachedFuture {  backingStatement.executeBatch() }
-        future = futureBatch
+        val futureResultChain = FutureResultChain(futureBatch)
+        future = futureResultChain
 
-        lsdConnection.addFutureStatement(this)
+        lsdConnection.addFuture(this)
 
-        return FutureResultConsumer(futureBatch)
+        return futureResultChain
     }
 
-    override fun executeFutureUpdate(sql: String): FutureResultConsumer<Int> {
+    override fun executeFutureUpdate(sql: String): FutureResultChain<Int> {
         val futureUpdate = FutureUtils.newCachedFuture { backingStatement.executeUpdate(sql) }
-        future = futureUpdate
+        val futureResultChain = FutureResultChain(futureUpdate)
+        future = futureResultChain
 
-        lsdConnection.addFutureStatement(this)
+        lsdConnection.addFuture(this)
 
-        return FutureResultConsumer(futureUpdate)
+        return futureResultChain
     }
 
     override fun addFutureBatch(sql: String) {

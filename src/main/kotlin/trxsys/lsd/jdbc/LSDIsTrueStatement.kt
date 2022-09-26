@@ -55,13 +55,8 @@ class LSDIsTrueStatement(connection: FutureConnection, condition: String) : Futu
 
     override fun resolve(): Boolean {
         val resultSet = futureResultSet.resolve()
-        resultSet.next()
 
-        val result = if (!resultSet.next()) {
-            resultSet.getBoolean(1)
-        } else {
-            false
-        }
+        val result = resultSet.getBoolean(1)
 
         if (result) {
             futureTrueBranch?.run()

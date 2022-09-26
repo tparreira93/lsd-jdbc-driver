@@ -8,28 +8,20 @@ import java.util.*
 import java.util.concurrent.Executor
 import kotlin.collections.ArrayList
 
-class LSDConnection(url: String, props: Properties) : FutureConnection {
+class LSDConnection(private val connection: Connection) : FutureConnection {
     private var connectionRollback: Boolean = false
-    private val connection = createBackingConnection(url, props)
-    private val futureStatements = ArrayList<Future<*>>()
-
-    private fun createBackingConnection(url: String, props: Properties): Connection {
-        val conn = DriverManager.getConnection(url, props)
-        conn.autoCommit = false
-
-        return conn
-    }
+    private val futures = ArrayList<Future<*>>()
 
     private fun cleanUp() {
-        for (statements in futureStatements) {
+        for (statements in futures) {
             statements.dispose()
         }
-        futureStatements.clear()
+        futures.clear()
         connectionRollback = false
     }
 
-    fun addFutureStatement(statement: FutureStatement) {
-        futureStatements.add(statement)
+    fun addFuture(future: Future<*>) {
+        futures.add(future)
     }
 
     private fun futurePreparedStatement(statement: PreparedStatement): PreparedFutureStatement {
@@ -64,12 +56,22 @@ class LSDConnection(url: String, props: Properties) : FutureConnection {
         )
     }
 
+    override fun isTrue(condition: Invariant): FutureCondition {
+        val future = LSDInvariant(condition)
+        addFuture(future)
+        return future
+    }
+
     override fun isTrue(condition: () -> Boolean): FutureCondition {
-        return LSDIsTrue(condition)
+        val future = LSDIsTrue(condition)
+        addFuture(future)
+        return future
     }
 
     override fun isTrue(condition: String): FutureStatementCondition {
-        return LSDIsTrueStatement(this, "SELECT $condition;")
+        val future = LSDIsTrueStatement(this, "SELECT $condition;")
+        addFuture(future)
+        return future
     }
 
     override fun prepareStatement(sql: String?): PreparedStatement {
@@ -91,7 +93,7 @@ class LSDConnection(url: String, props: Properties) : FutureConnection {
 
     override fun close() {
         if (!connection.isClosed) {
-            futureStatements.clear()
+            futures.clear()
             connection.close()
         }
     }
@@ -103,10 +105,11 @@ class LSDConnection(url: String, props: Properties) : FutureConnection {
     override fun commit() {
         try {
             var i = 0
-            var size = futureStatements.size
+            var size = futures.size
+
             while (i < size) {
-                futureStatements[i++].resolve()
-                size = futureStatements.size
+                futures[i++].resolve()
+                size = futures.size
 
                 if (hasRolledBack()) {
                     throw RollbackException()
@@ -141,11 +144,14 @@ class LSDConnection(url: String, props: Properties) : FutureConnection {
     }
 
     override fun <T : Any?> unwrap(iface: Class<T>?): T {
-        TODO("Not yet implemented")
+        if (iface!!.isAssignableFrom(javaClass)) {
+            return iface.cast(this)
+        }
+        throw SQLException("Cannot unwrap to " + iface.name)
     }
 
     override fun isWrapperFor(iface: Class<*>?): Boolean {
-        TODO("Not yet implemented")
+        return iface!!.isAssignableFrom(javaClass)
     }
 
     override fun createStatement(): Statement {

@@ -13,6 +13,6 @@ interface PreparedFutureStatement : PreparedStatement, FutureStatement {
     fun setFutureTimestamp(parameterIndex: Int, x: Future<Timestamp>)
 
     fun executeFutureQuery(): FutureResultSet
-    fun executeFutureUpdate(): FutureResultConsumer<Int>
+    fun executeFutureUpdate(): FutureResultChain<Int>
     fun addFutureBatch()
 }

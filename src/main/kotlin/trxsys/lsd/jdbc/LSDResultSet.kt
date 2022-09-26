@@ -15,13 +15,13 @@ import java.util.function.Consumer
 class LSDResultSet(private val futureResultSet: Future<ResultSet>) : FutureResultSet {
     private var resultSet: ResultSet? = null
     private var first: Boolean = false
-    private var hasResults: Boolean = false
+    var hasResults: Boolean = false
     private var consumer: Consumer<ResultSet>? = null
     override fun resolve(): ResultSet {
         resultSet = futureResultSet.resolve()
         if (!first) {
             if (resultSet == null)
-                throw NullPointerException("Result set has not been resolved properly before get future call")
+                throw NullPointerException("Result set has not been properly resolved!")
             hasResults = resultSet!!.next()
             first = true
 
@@ -33,7 +33,7 @@ class LSDResultSet(private val futureResultSet: Future<ResultSet>) : FutureResul
     override fun then(function: Consumer<ResultSet>) {
         this.consumer = function
     }
-    
+
     override fun getFutureInt(columnIndex: Int): Future<Int> {
         return FutureGetIntIndex(this, columnIndex)
     }
@@ -91,766 +91,772 @@ class LSDResultSet(private val futureResultSet: Future<ResultSet>) : FutureResul
     }
 
     override fun getObject(columnIndex: Int): Any {
-        TODO("Not yet implemented")
+        return resultSet?.getObject(columnIndex)!!
     }
 
     override fun getObject(columnLabel: String?): Any {
-        TODO("Not yet implemented")
+        return resultSet?.getObject(columnLabel)!!
     }
 
     override fun getString(columnIndex: Int): String {
-        TODO("Not yet implemented")
+        return resultSet?.getString(columnIndex)!!
     }
 
     override fun getString(columnLabel: String?): String {
-        TODO("Not yet implemented")
+        return resultSet?.getString(columnLabel)!!
     }
 
     override fun getInt(columnIndex: Int): Int {
-        TODO("Not yet implemented")
+        return resultSet?.getInt(columnIndex)!!
     }
 
     override fun getInt(columnLabel: String?): Int {
-        TODO("Not yet implemented")
+        return resultSet?.getInt(columnLabel)!!
     }
 
     override fun getLong(columnIndex: Int): Long {
-        TODO("Not yet implemented")
+        return resultSet?.getLong(columnIndex)!!
     }
 
     override fun getLong(columnLabel: String?): Long {
-        TODO("Not yet implemented")
+        return resultSet?.getLong(columnLabel)!!
     }
 
     override fun getFloat(columnIndex: Int): Float {
-        TODO("Not yet implemented")
+        return resultSet?.getFloat(columnIndex)!!
     }
 
     override fun getFloat(columnLabel: String?): Float {
-        TODO("Not yet implemented")
+        return resultSet?.getFloat(columnLabel)!!
     }
 
     override fun getDouble(columnIndex: Int): Double {
-        TODO("Not yet implemented")
+        return resultSet?.getDouble(columnIndex)!!
     }
 
     override fun getDouble(columnLabel: String?): Double {
-        TODO("Not yet implemented")
+        return resultSet?.getDouble(columnLabel)!!
     }
 
     override fun getObject(columnIndex: Int, map: MutableMap<String, Class<*>>?): Any {
-        TODO("Not yet implemented")
+        return resultSet?.getObject(columnIndex, map)!!
     }
 
     override fun getObject(columnLabel: String?, map: MutableMap<String, Class<*>>?): Any {
-        TODO("Not yet implemented")
+        return resultSet?.getObject(columnLabel, map)!!
     }
 
     override fun <T : Any?> getObject(columnIndex: Int, type: Class<T>?): T {
-        TODO("Not yet implemented")
+        return resultSet?.getObject(columnIndex, type)!!
     }
 
     override fun <T : Any?> getObject(columnLabel: String?, type: Class<T>?): T {
-        TODO("Not yet implemented")
+        return resultSet?.getObject(columnLabel, type)!!
     }
 
     override fun <T : Any?> unwrap(iface: Class<T>?): T {
-        TODO("Not yet implemented")
+        if (iface!!.isAssignableFrom(javaClass)) {
+            return iface.cast(this)
+        }
+        throw SQLException("Cannot unwrap to " + iface.name)
     }
 
     override fun isWrapperFor(iface: Class<*>?): Boolean {
-        TODO("Not yet implemented")
+        return iface!!.isAssignableFrom(javaClass)
     }
 
     override fun close() {
-        TODO("Not yet implemented")
+        resultSet?.close()
     }
 
     override fun next(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.next()!!
     }
 
     override fun wasNull(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.wasNull()!!
     }
 
     override fun getBoolean(columnIndex: Int): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.getBoolean(columnIndex)!!
     }
 
     override fun getBoolean(columnLabel: String?): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.getBoolean(columnLabel)!!
     }
 
     override fun getByte(columnIndex: Int): Byte {
-        TODO("Not yet implemented")
+        return resultSet?.getByte(columnIndex)!!
     }
 
     override fun getByte(columnLabel: String?): Byte {
-        TODO("Not yet implemented")
+        return resultSet?.getByte(columnLabel)!!
     }
 
     override fun getShort(columnIndex: Int): Short {
-        TODO("Not yet implemented")
+        return resultSet?.getShort(columnIndex)!!
     }
 
     override fun getShort(columnLabel: String?): Short {
-        TODO("Not yet implemented")
+        return resultSet?.getShort(columnLabel)!!
     }
 
     override fun getBigDecimal(columnIndex: Int, scale: Int): BigDecimal {
-        TODO("Not yet implemented")
+        return resultSet?.getBigDecimal(columnIndex, scale)!!
     }
 
     override fun getBigDecimal(columnLabel: String?, scale: Int): BigDecimal {
-        TODO("Not yet implemented")
+        return resultSet?.getBigDecimal(columnLabel, scale)!!
     }
 
     override fun getBigDecimal(columnIndex: Int): BigDecimal {
-        TODO("Not yet implemented")
+        return resultSet?.getBigDecimal(columnIndex)!!
     }
 
     override fun getBigDecimal(columnLabel: String?): BigDecimal {
-        TODO("Not yet implemented")
+        return resultSet?.getBigDecimal(columnLabel)!!
     }
 
     override fun getBytes(columnIndex: Int): ByteArray {
-        TODO("Not yet implemented")
+        return resultSet?.getBytes(columnIndex)!!
     }
 
     override fun getBytes(columnLabel: String?): ByteArray {
-        TODO("Not yet implemented")
+        return resultSet?.getBytes(columnLabel)!!
     }
 
     override fun getDate(columnIndex: Int): Date {
-        TODO("Not yet implemented")
+        return resultSet?.getDate(columnIndex)!!
     }
 
     override fun getDate(columnLabel: String?): Date {
-        TODO("Not yet implemented")
+        return resultSet?.getDate(columnLabel)!!
     }
 
     override fun getDate(columnIndex: Int, cal: Calendar?): Date {
-        TODO("Not yet implemented")
+        return resultSet?.getDate(columnIndex, cal)!!
     }
 
     override fun getDate(columnLabel: String?, cal: Calendar?): Date {
-        TODO("Not yet implemented")
+        return resultSet?.getDate(columnLabel, cal)!!
     }
 
     override fun getTime(columnIndex: Int): Time {
-        TODO("Not yet implemented")
+        return resultSet?.getTime(columnIndex)!!
     }
 
     override fun getTime(columnLabel: String?): Time {
-        TODO("Not yet implemented")
+        return resultSet?.getTime(columnLabel)!!
     }
 
     override fun getTime(columnIndex: Int, cal: Calendar?): Time {
-        TODO("Not yet implemented")
+        return resultSet?.getTime(columnIndex, cal)!!
     }
 
     override fun getTime(columnLabel: String?, cal: Calendar?): Time {
-        TODO("Not yet implemented")
+        return resultSet?.getTime(columnLabel, cal)!!
     }
 
     override fun getTimestamp(columnIndex: Int): Timestamp {
-        TODO("Not yet implemented")
+        return resultSet?.getTimestamp(columnIndex)!!
     }
 
     override fun getTimestamp(columnLabel: String?): Timestamp {
-        TODO("Not yet implemented")
+        return resultSet?.getTimestamp(columnLabel)!!
     }
 
     override fun getTimestamp(columnIndex: Int, cal: Calendar?): Timestamp {
-        TODO("Not yet implemented")
+        return resultSet?.getTimestamp(columnIndex, cal)!!
     }
 
     override fun getTimestamp(columnLabel: String?, cal: Calendar?): Timestamp {
-        TODO("Not yet implemented")
+        return resultSet?.getTimestamp(columnLabel, cal)!!
     }
 
     override fun getAsciiStream(columnIndex: Int): InputStream {
-        TODO("Not yet implemented")
+        return resultSet?.getAsciiStream(columnIndex)!!
     }
 
     override fun getAsciiStream(columnLabel: String?): InputStream {
-        TODO("Not yet implemented")
+        return resultSet?.getAsciiStream(columnLabel)!!
     }
 
     override fun getUnicodeStream(columnIndex: Int): InputStream {
-        TODO("Not yet implemented")
+        return resultSet?.getUnicodeStream(columnIndex)!!
     }
 
     override fun getUnicodeStream(columnLabel: String?): InputStream {
-        TODO("Not yet implemented")
+        return resultSet?.getUnicodeStream(columnLabel)!!
     }
 
     override fun getBinaryStream(columnIndex: Int): InputStream {
-        TODO("Not yet implemented")
+        return resultSet?.getBinaryStream(columnIndex)!!
     }
 
     override fun getBinaryStream(columnLabel: String?): InputStream {
-        TODO("Not yet implemented")
+        return resultSet?.getBinaryStream(columnLabel)!!
     }
 
     override fun getWarnings(): SQLWarning {
-        TODO("Not yet implemented")
+        return resultSet?.warnings!!
     }
 
     override fun clearWarnings() {
-        TODO("Not yet implemented")
+        resultSet?.clearWarnings()
     }
 
     override fun getCursorName(): String {
-        TODO("Not yet implemented")
+        return resultSet?.cursorName!!
     }
 
     override fun getMetaData(): ResultSetMetaData {
-        TODO("Not yet implemented")
+        return resultSet?.metaData!!
     }
 
     override fun findColumn(columnLabel: String?): Int {
-        TODO("Not yet implemented")
+        return resultSet?.findColumn(columnLabel)!!
     }
 
     override fun getCharacterStream(columnIndex: Int): Reader {
-        TODO("Not yet implemented")
+        return resultSet?.getCharacterStream(columnIndex)!!
     }
 
     override fun getCharacterStream(columnLabel: String?): Reader {
-        TODO("Not yet implemented")
+        return resultSet?.getCharacterStream(columnLabel)!!
     }
 
     override fun isBeforeFirst(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.isBeforeFirst!!
     }
 
     override fun isAfterLast(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.isAfterLast!!
     }
 
     override fun isFirst(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.isFirst!!
     }
 
     override fun isLast(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.isLast!!
     }
 
     override fun beforeFirst() {
-        TODO("Not yet implemented")
+        resultSet?.beforeFirst()
     }
 
     override fun afterLast() {
-        TODO("Not yet implemented")
+        resultSet?.afterLast()
     }
 
     override fun first(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.first()!!
     }
 
     override fun last(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.last()!!
     }
 
     override fun getRow(): Int {
-        TODO("Not yet implemented")
+        return resultSet?.row!!
     }
 
     override fun absolute(row: Int): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.absolute(row)!!
     }
 
     override fun relative(rows: Int): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.relative(rows)!!
     }
 
     override fun previous(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.previous()!!
     }
 
     override fun setFetchDirection(direction: Int) {
-        TODO("Not yet implemented")
+        resultSet?.fetchDirection = direction
     }
 
     override fun getFetchDirection(): Int {
-        TODO("Not yet implemented")
+        return resultSet?.fetchDirection!!
     }
 
     override fun setFetchSize(rows: Int) {
-        TODO("Not yet implemented")
+        resultSet?.fetchSize = rows
     }
 
     override fun getFetchSize(): Int {
-        TODO("Not yet implemented")
+        return resultSet?.fetchSize!!
     }
 
     override fun getType(): Int {
-        TODO("Not yet implemented")
+        return resultSet?.type!!
     }
 
     override fun getConcurrency(): Int {
-        TODO("Not yet implemented")
+        return resultSet?.concurrency!!
     }
 
     override fun rowUpdated(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.rowUpdated()!!
     }
 
     override fun rowInserted(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.rowInserted()!!
     }
 
     override fun rowDeleted(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.rowDeleted()!!
     }
 
     override fun updateNull(columnIndex: Int) {
-        TODO("Not yet implemented")
+        resultSet?.updateNull(columnIndex)
     }
 
     override fun updateNull(columnLabel: String?) {
-        TODO("Not yet implemented")
+        return resultSet?.updateNull(columnLabel)!!
     }
 
     override fun updateBoolean(columnIndex: Int, x: Boolean) {
-        TODO("Not yet implemented")
+        resultSet?.updateBoolean(columnIndex, x)
     }
 
     override fun updateBoolean(columnLabel: String?, x: Boolean) {
-        TODO("Not yet implemented")
+        resultSet?.updateBoolean(columnLabel, x)
     }
 
     override fun updateByte(columnIndex: Int, x: Byte) {
-        TODO("Not yet implemented")
+        resultSet?.updateByte(columnIndex, x)
     }
 
     override fun updateByte(columnLabel: String?, x: Byte) {
-        TODO("Not yet implemented")
+        resultSet?.updateByte(columnLabel, x)
     }
 
     override fun updateShort(columnIndex: Int, x: Short) {
-        TODO("Not yet implemented")
+        resultSet?.updateShort(columnIndex, x)
     }
 
     override fun updateShort(columnLabel: String?, x: Short) {
-        TODO("Not yet implemented")
+        resultSet?.updateShort(columnLabel, x)
     }
 
     override fun updateInt(columnIndex: Int, x: Int) {
-        TODO("Not yet implemented")
+        resultSet?.updateInt(columnIndex, x)
     }
 
     override fun updateInt(columnLabel: String?, x: Int) {
-        TODO("Not yet implemented")
+        resultSet?.updateInt(columnLabel, x)
     }
 
     override fun updateLong(columnIndex: Int, x: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateLong(columnIndex, x)
     }
 
     override fun updateLong(columnLabel: String?, x: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateLong(columnLabel, x)
     }
 
     override fun updateFloat(columnIndex: Int, x: Float) {
-        TODO("Not yet implemented")
+        resultSet?.updateFloat(columnIndex, x)
     }
 
     override fun updateFloat(columnLabel: String?, x: Float) {
-        TODO("Not yet implemented")
+        resultSet?.updateFloat(columnLabel, x)
     }
 
     override fun updateDouble(columnIndex: Int, x: Double) {
-        TODO("Not yet implemented")
+        resultSet?.updateDouble(columnIndex, x)
     }
 
     override fun updateDouble(columnLabel: String?, x: Double) {
-        TODO("Not yet implemented")
+        resultSet?.updateDouble(columnLabel, x)
     }
 
     override fun updateBigDecimal(columnIndex: Int, x: BigDecimal?) {
-        TODO("Not yet implemented")
+        resultSet?.updateBigDecimal(columnIndex, x)!!
     }
 
     override fun updateBigDecimal(columnLabel: String?, x: BigDecimal?) {
-        TODO("Not yet implemented")
+        resultSet?.updateBigDecimal(columnLabel, x)
     }
 
     override fun updateString(columnIndex: Int, x: String?) {
-        TODO("Not yet implemented")
+        resultSet?.updateString(columnIndex, x)!!
     }
 
     override fun updateString(columnLabel: String?, x: String?) {
-        TODO("Not yet implemented")
+        resultSet?.updateString(columnLabel, x)
     }
 
     override fun updateBytes(columnIndex: Int, x: ByteArray?) {
-        TODO("Not yet implemented")
+        resultSet?.updateBytes(columnIndex, x)!!
     }
 
     override fun updateBytes(columnLabel: String?, x: ByteArray?) {
-        TODO("Not yet implemented")
+        resultSet?.updateBytes(columnLabel, x)
     }
 
     override fun updateDate(columnIndex: Int, x: Date?) {
-        TODO("Not yet implemented")
+        resultSet?.updateDate(columnIndex, x)!!
     }
 
     override fun updateDate(columnLabel: String?, x: Date?) {
-        TODO("Not yet implemented")
+        resultSet?.updateDate(columnLabel, x)
     }
 
     override fun updateTime(columnIndex: Int, x: Time?) {
-        TODO("Not yet implemented")
+        resultSet?.updateTime(columnIndex, x)!!
     }
 
     override fun updateTime(columnLabel: String?, x: Time?) {
-        TODO("Not yet implemented")
+        resultSet?.updateTime(columnLabel, x)
     }
 
     override fun updateTimestamp(columnIndex: Int, x: Timestamp?) {
-        TODO("Not yet implemented")
+        resultSet?.updateTimestamp(columnIndex, x)!!
     }
 
     override fun updateTimestamp(columnLabel: String?, x: Timestamp?) {
-        TODO("Not yet implemented")
+        resultSet?.updateTimestamp(columnLabel, x)
     }
 
     override fun updateAsciiStream(columnIndex: Int, x: InputStream?, length: Int) {
-        TODO("Not yet implemented")
+        resultSet?.updateAsciiStream(columnIndex, x, length)!!
     }
 
     override fun updateAsciiStream(columnLabel: String?, x: InputStream?, length: Int) {
-        TODO("Not yet implemented")
+        resultSet?.updateAsciiStream(columnLabel, x, length)
     }
 
     override fun updateAsciiStream(columnIndex: Int, x: InputStream?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateAsciiStream(columnIndex, x, length)!!
     }
 
     override fun updateAsciiStream(columnLabel: String?, x: InputStream?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateAsciiStream(columnLabel, x, length)!!
     }
 
     override fun updateAsciiStream(columnIndex: Int, x: InputStream?) {
-        TODO("Not yet implemented")
+        resultSet?.updateAsciiStream(columnIndex, x)
     }
 
     override fun updateAsciiStream(columnLabel: String?, x: InputStream?) {
-        TODO("Not yet implemented")
+        resultSet?.updateAsciiStream(columnLabel, x)
     }
 
     override fun updateBinaryStream(columnIndex: Int, x: InputStream?, length: Int) {
-        TODO("Not yet implemented")
+        resultSet?.updateBinaryStream(columnIndex, x, length)!!
     }
 
     override fun updateBinaryStream(columnLabel: String?, x: InputStream?, length: Int) {
-        TODO("Not yet implemented")
+        resultSet?.updateBinaryStream(columnLabel, x, length)
     }
 
     override fun updateBinaryStream(columnIndex: Int, x: InputStream?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateBinaryStream(columnIndex, x, length)
     }
 
     override fun updateBinaryStream(columnLabel: String?, x: InputStream?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateBinaryStream(columnLabel, x, length)
     }
 
     override fun updateBinaryStream(columnIndex: Int, x: InputStream?) {
-        TODO("Not yet implemented")
+        resultSet?.updateBinaryStream(columnIndex, x)
     }
 
     override fun updateBinaryStream(columnLabel: String?, x: InputStream?) {
-        TODO("Not yet implemented")
+        resultSet?.updateBinaryStream(columnLabel, x)
     }
 
     override fun updateCharacterStream(columnIndex: Int, x: Reader?, length: Int) {
-        TODO("Not yet implemented")
+        resultSet?.updateCharacterStream(columnIndex, x, length)
     }
 
     override fun updateCharacterStream(columnLabel: String?, reader: Reader?, length: Int) {
-        TODO("Not yet implemented")
+        resultSet?.updateCharacterStream(columnLabel, reader, length)
     }
 
     override fun updateCharacterStream(columnIndex: Int, x: Reader?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateCharacterStream(columnIndex, x, length)
     }
 
     override fun updateCharacterStream(columnLabel: String?, reader: Reader?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateCharacterStream(columnLabel, reader, length)
     }
 
     override fun updateCharacterStream(columnIndex: Int, x: Reader?) {
-        TODO("Not yet implemented")
+        resultSet?.updateCharacterStream(columnIndex, x)
     }
 
     override fun updateCharacterStream(columnLabel: String?, reader: Reader?) {
-        TODO("Not yet implemented")
+        resultSet?.updateCharacterStream(columnLabel, reader)
     }
 
     override fun updateObject(columnIndex: Int, x: Any?, scaleOrLength: Int) {
-        TODO("Not yet implemented")
+        resultSet?.updateObject(columnIndex, x, scaleOrLength)
     }
 
     override fun updateObject(columnIndex: Int, x: Any?) {
-        TODO("Not yet implemented")
+        resultSet?.updateObject(columnIndex, x)
     }
 
     override fun updateObject(columnLabel: String?, x: Any?, scaleOrLength: Int) {
-        TODO("Not yet implemented")
+        resultSet?.updateObject(columnLabel, x, scaleOrLength)
     }
 
     override fun updateObject(columnLabel: String?, x: Any?) {
-        TODO("Not yet implemented")
+        resultSet?.updateObject(columnLabel, x)
     }
 
     override fun insertRow() {
-        TODO("Not yet implemented")
+        resultSet?.insertRow()
     }
 
     override fun updateRow() {
-        TODO("Not yet implemented")
+        resultSet?.updateRow()
     }
 
     override fun deleteRow() {
-        TODO("Not yet implemented")
+        resultSet?.deleteRow()
     }
 
     override fun refreshRow() {
-        TODO("Not yet implemented")
+        resultSet?.refreshRow()
     }
 
     override fun cancelRowUpdates() {
-        TODO("Not yet implemented")
+        resultSet?.cancelRowUpdates()
     }
 
     override fun moveToInsertRow() {
-        TODO("Not yet implemented")
+        resultSet?.moveToInsertRow()
     }
 
     override fun moveToCurrentRow() {
-        TODO("Not yet implemented")
+        resultSet?.moveToCurrentRow()
     }
 
     override fun getStatement(): Statement {
-        TODO("Not yet implemented")
+        return resultSet?.statement!!
     }
 
     override fun getRef(columnIndex: Int): Ref {
-        TODO("Not yet implemented")
+        return resultSet?.getRef(columnIndex)!!
     }
 
     override fun getRef(columnLabel: String?): Ref {
-        TODO("Not yet implemented")
+        return resultSet?.getRef(columnLabel)!!
     }
 
     override fun getBlob(columnIndex: Int): Blob {
-        TODO("Not yet implemented")
+        return resultSet?.getBlob(columnIndex)!!
     }
 
     override fun getBlob(columnLabel: String?): Blob {
-        TODO("Not yet implemented")
+        return resultSet?.getBlob(columnLabel)!!
     }
 
     override fun getClob(columnIndex: Int): Clob {
-        TODO("Not yet implemented")
+        return resultSet?.getClob(columnIndex)!!
     }
 
     override fun getClob(columnLabel: String?): Clob {
-        TODO("Not yet implemented")
+        return resultSet?.getClob(columnLabel)!!
     }
 
     override fun getArray(columnIndex: Int): Array {
-        TODO("Not yet implemented")
+        return resultSet?.getArray(columnIndex)!!
     }
 
     override fun getArray(columnLabel: String?): Array {
-        TODO("Not yet implemented")
+        return resultSet?.getArray(columnLabel)!!
     }
 
     override fun getURL(columnIndex: Int): URL {
-        TODO("Not yet implemented")
+        return resultSet?.getURL(columnIndex)!!
     }
 
     override fun getURL(columnLabel: String?): URL {
-        TODO("Not yet implemented")
+        return resultSet?.getURL(columnLabel)!!
     }
 
     override fun updateRef(columnIndex: Int, x: Ref?) {
-        TODO("Not yet implemented")
+        resultSet?.updateRef(columnIndex, x)
     }
 
     override fun updateRef(columnLabel: String?, x: Ref?) {
-        TODO("Not yet implemented")
+        resultSet?.updateRef(columnLabel, x)
     }
 
     override fun updateBlob(columnIndex: Int, x: Blob?) {
-        TODO("Not yet implemented")
+        resultSet?.updateBlob(columnIndex, x)
     }
 
     override fun updateBlob(columnLabel: String?, x: Blob?) {
-        TODO("Not yet implemented")
+        resultSet?.updateBlob(columnLabel, x)
     }
 
     override fun updateBlob(columnIndex: Int, inputStream: InputStream?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateBlob(columnIndex, inputStream, length)
     }
 
     override fun updateBlob(columnLabel: String?, inputStream: InputStream?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateBlob(columnLabel, inputStream, length)
     }
 
-    override fun updateBlob(columnIndex: Int, inputStream: InputStream?) {
-        TODO("Not yet implemented")
+    override fun updateBlob(columnIndex: Int, x: InputStream?) {
+        resultSet?.updateBlob(columnIndex, x)
     }
 
     override fun updateBlob(columnLabel: String?, inputStream: InputStream?) {
-        TODO("Not yet implemented")
+        resultSet?.updateBlob(columnLabel, inputStream)
     }
 
     override fun updateClob(columnIndex: Int, x: Clob?) {
-        TODO("Not yet implemented")
+        resultSet?.updateClob(columnIndex, x)
     }
 
     override fun updateClob(columnLabel: String?, x: Clob?) {
-        TODO("Not yet implemented")
+        resultSet?.updateClob(columnLabel, x)
     }
 
     override fun updateClob(columnIndex: Int, reader: Reader?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateClob(columnIndex, reader, length)
     }
 
     override fun updateClob(columnLabel: String?, reader: Reader?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateClob(columnLabel, reader, length)
     }
 
     override fun updateClob(columnIndex: Int, reader: Reader?) {
-        TODO("Not yet implemented")
+        resultSet?.updateClob(columnIndex, reader)
     }
 
     override fun updateClob(columnLabel: String?, reader: Reader?) {
-        TODO("Not yet implemented")
+        resultSet?.updateClob(columnLabel, reader)
     }
 
     override fun updateArray(columnIndex: Int, x: Array?) {
-        TODO("Not yet implemented")
+        resultSet?.updateArray(columnIndex, x)
     }
 
     override fun updateArray(columnLabel: String?, x: Array?) {
-        TODO("Not yet implemented")
+        resultSet?.updateArray(columnLabel, x)
     }
 
     override fun getRowId(columnIndex: Int): RowId {
-        TODO("Not yet implemented")
+        return resultSet?.getRowId(columnIndex)!!
     }
 
     override fun getRowId(columnLabel: String?): RowId {
-        TODO("Not yet implemented")
+        return resultSet?.getRowId(columnLabel)!!
     }
 
     override fun updateRowId(columnIndex: Int, x: RowId?) {
-        TODO("Not yet implemented")
+        resultSet?.updateRowId(columnIndex, x)
     }
 
     override fun updateRowId(columnLabel: String?, x: RowId?) {
-        TODO("Not yet implemented")
+        resultSet?.updateRowId(columnLabel, x)
     }
 
     override fun getHoldability(): Int {
-        TODO("Not yet implemented")
+        return resultSet?.holdability!!
     }
 
     override fun isClosed(): Boolean {
-        TODO("Not yet implemented")
+        return resultSet?.isClosed!!
     }
 
     override fun updateNString(columnIndex: Int, nString: String?) {
-        TODO("Not yet implemented")
+        resultSet?.updateNString(columnIndex, nString)
     }
 
     override fun updateNString(columnLabel: String?, nString: String?) {
-        TODO("Not yet implemented")
+        resultSet?.updateNString(columnLabel, nString)
     }
 
     override fun updateNClob(columnIndex: Int, nClob: NClob?) {
-        TODO("Not yet implemented")
+        resultSet?.updateNClob(columnIndex, nClob)
     }
 
     override fun updateNClob(columnLabel: String?, nClob: NClob?) {
-        TODO("Not yet implemented")
+        resultSet?.updateNClob(columnLabel, nClob)
     }
 
     override fun updateNClob(columnIndex: Int, reader: Reader?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateNClob(columnIndex, reader, length)
     }
 
     override fun updateNClob(columnLabel: String?, reader: Reader?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateNClob(columnLabel, reader, length)
     }
 
     override fun updateNClob(columnIndex: Int, reader: Reader?) {
-        TODO("Not yet implemented")
+        resultSet?.updateNClob(columnIndex, reader)
     }
 
     override fun updateNClob(columnLabel: String?, reader: Reader?) {
-        TODO("Not yet implemented")
+        resultSet?.updateNClob(columnLabel, reader)
     }
 
     override fun getNClob(columnIndex: Int): NClob {
-        TODO("Not yet implemented")
+        return resultSet?.getNClob(columnIndex)!!
     }
 
     override fun getNClob(columnLabel: String?): NClob {
-        TODO("Not yet implemented")
+        return resultSet?.getNClob(columnLabel)!!
     }
 
     override fun getSQLXML(columnIndex: Int): SQLXML {
-        TODO("Not yet implemented")
+        return resultSet?.getSQLXML(columnIndex)!!
     }
 
     override fun getSQLXML(columnLabel: String?): SQLXML {
-        TODO("Not yet implemented")
+        return resultSet?.getSQLXML(columnLabel)!!
     }
 
     override fun updateSQLXML(columnIndex: Int, xmlObject: SQLXML?) {
-        TODO("Not yet implemented")
+        return resultSet?.updateSQLXML(columnIndex, xmlObject)!!
     }
 
     override fun updateSQLXML(columnLabel: String?, xmlObject: SQLXML?) {
-        TODO("Not yet implemented")
+        return resultSet?.updateSQLXML(columnLabel, xmlObject)!!
     }
 
     override fun getNString(columnIndex: Int): String {
-        TODO("Not yet implemented")
+        return resultSet?.getNString(columnIndex)!!
     }
 
     override fun getNString(columnLabel: String?): String {
-        TODO("Not yet implemented")
+        return resultSet?.getNString(columnLabel)!!
     }
 
     override fun getNCharacterStream(columnIndex: Int): Reader {
-        TODO("Not yet implemented")
+        return resultSet?.getNCharacterStream(columnIndex)!!
     }
 
     override fun getNCharacterStream(columnLabel: String?): Reader {
-        TODO("Not yet implemented")
+        return resultSet?.getNCharacterStream(columnLabel)!!
     }
 
     override fun updateNCharacterStream(columnIndex: Int, x: Reader?, length: Long) {
-        TODO("Not yet implemented")
+        resultSet?.updateNCharacterStream(columnIndex, x, length)
     }
 
     override fun updateNCharacterStream(columnLabel: String?, reader: Reader?, length: Long) {
-        TODO("Not yet implemented")
+
+        resultSet?.updateNCharacterStream(columnLabel, reader, length)
     }
 
     override fun updateNCharacterStream(columnIndex: Int, x: Reader?) {
-        TODO("Not yet implemented")
+
+        resultSet?.updateNCharacterStream(columnIndex, x)
     }
 
     override fun updateNCharacterStream(columnLabel: String?, reader: Reader?) {
-        TODO("Not yet implemented")
+
+        resultSet?.updateNCharacterStream(columnLabel, reader)
     }
 }

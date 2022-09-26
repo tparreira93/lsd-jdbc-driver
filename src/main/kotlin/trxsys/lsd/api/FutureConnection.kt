@@ -11,4 +11,5 @@ interface FutureConnection: Connection {
 
     fun isTrue(condition: () -> Boolean) : FutureCondition
     fun isTrue(condition: String): FutureStatementCondition
+    fun isTrue(condition: Invariant): FutureCondition
 }

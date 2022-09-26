@@ -1,11 +1,11 @@
 package trxsys.lsd.api
 
 import trxsys.lsd.future.Future
-import trxsys.lsd.future.ResultConsumer
+import trxsys.lsd.future.ResultChain
 import java.sql.ResultSet
 import java.sql.Timestamp
 
-interface FutureResultSet: Future<ResultSet>, ResultConsumer<ResultSet>, ResultSet {
+interface FutureResultSet: Future<ResultSet>, ResultChain<ResultSet>, ResultSet {
     fun getFutureObject(columnIndex: Int): Future<Any>
 
     fun getFutureObject(columnLabel: String?): Future<Any>

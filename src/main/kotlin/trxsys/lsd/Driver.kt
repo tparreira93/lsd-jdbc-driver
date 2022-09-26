@@ -3,6 +3,7 @@ package trxsys.lsd
 import trxsys.lsd.jdbc.LSDConnection
 import trxsys.lsd.util.DriverInfo
 import java.sql.Connection
+import java.sql.DriverManager
 import java.sql.DriverPropertyInfo
 import java.sql.SQLException
 import java.util.*
@@ -18,11 +19,12 @@ class Driver : java.sql.Driver {
         logger.log(Level.FINE, DriverInfo.DRIVER_FULL_NAME)
     }
 
-    override fun connect(url: String?, info: Properties?): Connection? {
+    override fun connect(url: String?, properties: Properties): Connection? {
         // As per the documentation, connect must return null if the driver realises its url is invalid
         if (!acceptsURL(url!!)) return null
 
-        return LSDConnection(converUrl(url), info!!)
+        val connection = createBackingConnection(converUrl(url), properties)
+        return LSDConnection(connection)
     }
 
     override fun acceptsURL(url: String?): Boolean {
@@ -31,6 +33,13 @@ class Driver : java.sql.Driver {
         }
 
         return false
+    }
+
+    private fun createBackingConnection(url: String, props: Properties): Connection {
+        val conn = DriverManager.getConnection(url, props)
+        conn.autoCommit = false
+
+        return conn
     }
 
     override fun getPropertyInfo(url: String?, info: Properties?): Array<DriverPropertyInfo> {

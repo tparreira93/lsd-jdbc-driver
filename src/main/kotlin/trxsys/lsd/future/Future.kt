@@ -10,7 +10,7 @@ fun interface Future<T> {
     }
 }
 
-interface ResultConsumer<T> {
+interface ResultChain<T> {
     fun then(function: Consumer<T>)
 }
 
