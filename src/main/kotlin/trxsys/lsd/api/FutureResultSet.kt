@@ -33,4 +33,6 @@ interface FutureResultSet: Future<ResultSet>, ResultChain<ResultSet>, ResultSet 
     fun getFutureTimestamp(columnIndex: Int): Future<Timestamp>
 
     fun getFutureTimestamp(columnLabel: String?): Future<Timestamp>
+
+    fun ifEmpty(function: Runnable)
 }

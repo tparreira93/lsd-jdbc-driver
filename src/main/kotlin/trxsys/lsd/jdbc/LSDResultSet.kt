@@ -15,8 +15,9 @@ import java.util.function.Consumer
 class LSDResultSet(private val futureResultSet: Future<ResultSet>) : FutureResultSet {
     private var resultSet: ResultSet? = null
     private var first: Boolean = false
-    var hasResults: Boolean = false
+    private var hasResults: Boolean = false
     private var consumer: Consumer<ResultSet>? = null
+    private var whenEmpty: Runnable? = null
     override fun resolve(): ResultSet {
         resultSet = futureResultSet.resolve()
         if (!first) {
@@ -25,6 +26,10 @@ class LSDResultSet(private val futureResultSet: Future<ResultSet>) : FutureResul
             hasResults = resultSet!!.next()
             first = true
 
+            if (!hasResults) {
+                whenEmpty?.run()
+            }
+
             consumer?.accept(resultSet!!)
         }
         return resultSet!!
@@ -32,6 +37,10 @@ class LSDResultSet(private val futureResultSet: Future<ResultSet>) : FutureResul
 
     override fun then(function: Consumer<ResultSet>) {
         this.consumer = function
+    }
+
+    override fun ifEmpty(function: Runnable) {
+        this.whenEmpty = function
     }
 
     override fun getFutureInt(columnIndex: Int): Future<Int> {
