@@ -26,7 +26,7 @@ class LSDResultSet(private val futureResultSet: Future<ResultSet>) : FutureResul
             hasResults = resultSet!!.next()
             first = true
 
-            if (!hasResults) {
+            if (resultSet!!.isClosed || !hasResults) {
                 whenEmpty?.run()
             }
 
