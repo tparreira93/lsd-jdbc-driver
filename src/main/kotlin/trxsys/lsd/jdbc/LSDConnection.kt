@@ -1,6 +1,7 @@
 package trxsys.lsd.jdbc
 
 import trxsys.lsd.RollbackException
+import trxsys.lsd.StopExecution
 import trxsys.lsd.api.*
 import trxsys.lsd.future.Future
 import java.sql.*
@@ -116,6 +117,8 @@ class LSDConnection(private val connection: Connection) : FutureConnection {
                 }
             }
             connection.commit()
+        } catch (e: StopExecution){
+            // ignore
         } catch (e: RollbackException){
             // ignore
         } catch (e: java.lang.Exception) {
