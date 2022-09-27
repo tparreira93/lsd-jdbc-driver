@@ -13,7 +13,7 @@ object LSDJDBCMain {
             "The LSD JDBC driver is not an executable Java program.%n%n"
                     + "You must install it according to the JDBC driver installation "
                     + "instructions for your application / container / appserver, "
-                    + "then use it by specifying a JDBC URL of the form %n    jdbc:lsd.v2:<database>//%n"
+                    + "then use it by specifying a JDBC URL of the form %n    jdbc:lsd:<database>//%n"
                     + "or using an application specific method.%n%n"
                     + "This command has had no effect.%n"
         )
