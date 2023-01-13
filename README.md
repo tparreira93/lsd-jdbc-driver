@@ -14,3 +14,7 @@ What happens in the background is that the LSD driver will create a backing conn
 The connection URI is structured in a way that it should start with `jdbc:lsd:` and the remainder should be related with the database vendor.
 This is because the `lsd:` will be removed from the from the connection URI and LSD driver will then search for a driver that will use to create the backing connection.
 Going back to the PostgreSQL example, the backing connection used by this driver would be `jdbc:postgresql://some_host:some_port/some_database`.
+
+## Acknowledgments
+
+This work was partially funded by the Portuguese FCT-MEC project HiPSTr (High-performance Software Transactions — PTDC/CCI-COM/32456/2017)&LISBOA-01-0145-FEDER-032456).
