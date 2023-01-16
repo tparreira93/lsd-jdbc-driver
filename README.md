@@ -9,7 +9,7 @@ For this, new methods were introduced that enable using futures while the origin
 
 The driver was tested with PostgreSQL, but the intention is for the driver to be vendor-agnostic.
 As an example, a connection URI for PostgreSQL would be defined as follows `jdbc:lsd:postgresql://some_host:some_port/some_database`.
-What happens in the background is that the LSD driver will create a backing connection with the inteded database, in this case PostgresSQL. 
+What happens in the background is that the LSD driver will create a backing connection with the intended database, in this case PostgresSQL. 
 
 The connection URI is structured in a way that it should start with `jdbc:lsd:` and the remainder should be related with the database vendor.
 This is because the `lsd:` will be removed from the connection URI and LSD driver will then search for a driver that will use to create the backing connection.
@@ -73,6 +73,9 @@ Using the connection is then very similar to what you would do with a JDBC drive
 ## Examples
 
 Usage examples are present in the [LSDConnectionTest.kt](src/test/kotlin/trxsys/lsd/jdbc/LSDConnectionTest.kt) and [LSDPreparedStatementTest.kt](src/test/kotlin/trxsys/lsd/jdbc/LSDPreparedStatementTest.kt).
+
+This is because the `lsd:` will be removed from the from the connection URI and LSD driver will then search for a driver that will use to create the backing connection.
+Going back to the PostgreSQL example, the backing connection used by this driver would be `jdbc:postgresql://some_host:some_port/some_database`.
 
 ## Acknowledgments
 
