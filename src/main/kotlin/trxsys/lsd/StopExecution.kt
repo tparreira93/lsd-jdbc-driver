@@ -1,3 +1,3 @@
 package trxsys.lsd
 
-class StopExecution : Throwable()
+class StopExecution : RuntimeException()

@@ -12,6 +12,8 @@ import kotlin.collections.ArrayList
 class LSDConnection(private val connection: Connection) : FutureConnection {
     private var connectionRollback: Boolean = false
     private val futures = ArrayList<Future<*>>()
+    private var stop = false
+    private var rollback = false
 
     private fun cleanUp() {
         for (statements in futures) {
@@ -103,12 +105,23 @@ class LSDConnection(private val connection: Connection) : FutureConnection {
         connection.abort(executor)
     }
 
+    override fun stop() {
+        stop = true;
+    }
+
+    override fun stopAndRollback() {
+        stop = true
+        rollback = true
+    }
+
     override fun commit() {
         try {
             var i = 0
             var size = futures.size
 
             while (i < size) {
+                if (stop) break
+
                 futures[i++].resolve()
                 size = futures.size
 
@@ -116,7 +129,8 @@ class LSDConnection(private val connection: Connection) : FutureConnection {
                     throw RollbackException()
                 }
             }
-            connection.commit()
+            if (!rollback)
+                connection.commit()
         } catch (e: StopExecution){
             // ignore
         } catch (e: RollbackException){
